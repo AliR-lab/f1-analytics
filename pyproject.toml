@@ -1,0 +1,26 @@
+[project]
+name = "f1-analytics"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Ali R", email = "349435247+AliR-lab@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "duckdb>=1.4.5",
+    "matplotlib>=3.9.4",
+    "pandas>=2.3.3",
+]
+
+[project.scripts]
+f1-analytics = "f1_analytics:main"
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "jupyterlab>=4.5.11",
+]
