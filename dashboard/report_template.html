@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title data-i18n="doc_title">F1 Dominance Report</title>
+  <meta name="description" content="Who ruled each era of Formula 1, 1950-2026: the full report behind the dashboard" data-i18n-attr="content:meta_description">
+
+  <script>
+    // Elige el tema antes de pintar la página para evitar un parpadeo de color.
+    // Misma clave que el dashboard, así los dos recuerdan el mismo tema.
+    (function () {
+      var saved = null;
+      try { saved = localStorage.getItem("theme"); } catch (e) {}
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = saved || (prefersDark ? "dark" : "light");
+    })();
+  </script>
+
+  <style>
+    /* ---------- Colores del tema (claro por defecto, igual que el dashboard) ---------- */
+    :root {
+      --bg-1: #e8eefc;
+      --bg-2: #fbe9ef;
+      --blob-1: rgba(255, 120, 120, 0.35);
+      --blob-2: rgba(110, 150, 255, 0.35);
+      --text: #1d1d1f;
+      --text-muted: #5b5b66;
+      --glass: rgba(255, 255, 255, 0.55);
+      --glass-border: rgba(255, 255, 255, 0.75);
+      --glass-highlight: rgba(255, 255, 255, 0.6);
+      --shadow: rgba(30, 40, 80, 0.12);
+      --accent: #d62839;
+      --accent-contrast: #ffffff;
+      --divider: rgba(0, 0, 0, 0.10);
+      /* Tarjeta del resumen: cristal oscuro en los dos temas */
+      --overall-bg: rgba(32, 24, 42, 0.86);
+      --overall-text: #f5f5f7;
+      --overall-muted: #c9c6d3;
+      /* Fondos suaves para tablas, código y etiquetas */
+      --tint: rgba(255, 255, 255, 0.45);
+      --row-hover: rgba(214, 40, 57, 0.06);
+      color-scheme: light;
+    }
+
+    :root[data-theme="dark"] {
+      --bg-1: #0d1020;
+      --bg-2: #1a0f1f;
+      --blob-1: rgba(220, 40, 60, 0.30);
+      --blob-2: rgba(60, 90, 220, 0.30);
+      --text: #f2f2f5;
+      --text-muted: #a4a4b2;
+      --glass: rgba(28, 30, 44, 0.50);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-highlight: rgba(255, 255, 255, 0.08);
+      --shadow: rgba(0, 0, 0, 0.45);
+      --accent: #ff5a6a;
+      /* El acento oscuro es claro: el texto encima va oscuro para que se lea */
+      --accent-contrast: #1a0f1f;
+      --divider: rgba(255, 255, 255, 0.14);
+      --overall-bg: rgba(8, 8, 16, 0.80);
+      --overall-text: #f5f5f7;
+      --overall-muted: #b8b5c4;
+      --tint: rgba(255, 255, 255, 0.05);
+      --row-hover: rgba(255, 90, 106, 0.08);
+      color-scheme: dark;
+    }
+
+    /* ---------- Base ---------- */
+    * { box-sizing: border-box; }
+
+    html, body { margin: 0; }
+
+    /* Los enlaces del índice bajan suavemente, salvo si el usuario prefiere menos movimiento */
+    @media (prefers-reduced-motion: no-preference) {
+      html { scroll-behavior: smooth; }
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg-1);
+      -webkit-font-smoothing: antialiased;
+      transition: color 0.3s ease, background-color 0.3s ease;
+    }
+
+    /* Degradado fijo detrás de todo: es lo que se ve difuminado a través de las tarjetas */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(circle at 15% 20%, var(--blob-1), transparent 45%),
+        radial-gradient(circle at 85% 70%, var(--blob-2), transparent 45%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Más estrecho que el dashboard: es una página para leer */
+    .container {
+      width: 100%;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* ---------- Vidrio ---------- */
+    .glass {
+      background: var(--glass);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      backdrop-filter: blur(20px) saturate(160%);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      box-shadow:
+        inset 0 1px 0 var(--glass-highlight),
+        0 8px 32px var(--shadow);
+    }
+
+    /* ---------- Cabecera ---------- */
+    /* flex-wrap: en pantallas estrechas los controles bajan debajo del título */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 32px 0 24px;
+    }
+
+    .header-text { flex: 1 1 280px; }
+
+    .header-controls {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--text-muted);
+      font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+    }
+
+    .theme-toggle {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border-radius: 50%;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .theme-toggle svg { width: 20px; height: 20px; }
+
+    /* Muestra el sol en modo oscuro (para pasar a claro) y la luna en modo claro */
+    .icon-sun { display: none; }
+    :root[data-theme="dark"] .icon-sun { display: block; }
+    :root[data-theme="dark"] .icon-moon { display: none; }
+
+    /* ---------- Selector de idioma ---------- */
+    .lang-switch {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      border-radius: 999px;
+    }
+
+    .lang-switch button {
+      padding: 6px;
+      border: 0;
+      border-radius: 8px;
+      background: none;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .lang-switch button:hover { color: var(--text); }
+    .lang-switch button[aria-pressed="true"] { color: var(--accent); }
+    .lang-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    .lang-sep { color: var(--text-muted); opacity: 0.6; }
+
+    /* Muestra solo los bloques (las tablas) del idioma activo */
+    html:not([lang="es"]) [data-only-lang="es"],
+    html[lang="es"] [data-only-lang="en"] { display: none; }
+
+    /* ---------- Disposición: índice + artículo ---------- */
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .report {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      min-width: 0;
+    }
+
+    /* ---------- Pantallas anchas: índice fijo a la izquierda ---------- */
+    @media (min-width: 1100px) {
+      main {
+        display: grid;
+        grid-template-columns: 250px minmax(0, 1fr);
+        align-items: start;
+      }
+
+      .toc {
+        position: sticky;
+        top: 24px;
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+    }
+
+    /* ---------- Índice ---------- */
+    .toc { padding: 20px; }
+
+    .toc ol {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      counter-reset: toc;
+    }
+
+    .toc li { counter-increment: toc; }
+
+    .toc a {
+      display: flex;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.35;
+      transition: color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .toc a::before {
+      content: counter(toc);
+      flex-shrink: 0;
+      width: 1.1em;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .toc a:hover { color: var(--text); background: var(--tint); text-decoration: none; }
+    .toc a[aria-current="true"] { color: var(--accent); background: var(--tint); font-weight: 600; }
+    .toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    /* ---------- Tarjetas de sección ---------- */
+    .card { padding: 28px 32px; }
+
+    /* Deja sitio arriba al saltar desde el índice */
+    .report > section { scroll-margin-top: 24px; }
+
+    .card h2 {
+      margin: 0 0 16px;
+      font-size: 1.5rem;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+    }
+
+    .section-num {
+      margin-right: 10px;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .card h3 {
+      margin: 28px 0 8px;
+      font-size: 1.1rem;
+      letter-spacing: -0.005em;
+    }
+
+    /* Años de cada era, en el color de acento delante del título */
+    .era-years {
+      display: block;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+
+    .prose { font-size: 1.02rem; line-height: 1.65; }
+    .prose p { margin: 12px 0 0; }
+    .prose h2 + p, .prose h3 + p { margin-top: 0; }
+
+    .prose ul, .prose ol { margin: 12px 0 0; padding-left: 1.3em; }
+    .prose li + li { margin-top: 8px; }
+
+    code {
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: var(--tint);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.88em;
+    }
+
+    pre {
+      margin: 10px 0 0;
+      padding: 14px 16px;
+      overflow-x: auto;
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      background: var(--tint);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    pre code { padding: 0; background: none; font-size: inherit; }
+
+    /* ---------- Resumen destacado ---------- */
+    /* Cristal oscuro con un toque del acento, como la tarjeta Overall del dashboard.
+       Redefine los colores de texto para que todo lo de dentro sea claro. */
+    .card-overall.glass {
+      --text: var(--overall-text);
+      --text-muted: var(--overall-muted);
+      color: var(--text);
+      background:
+        linear-gradient(140deg, color-mix(in srgb, var(--accent) 28%, transparent), transparent 65%),
+        var(--overall-bg);
+      border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        0 10px 36px var(--shadow);
+    }
+
+    /* El rojo claro del tema oscuro se lee mejor sobre el cristal oscuro en los dos temas */
+    .card-overall .section-num { color: #ff5a6a; }
+
+    .findings {
+      list-style: none;
+      margin: 16px 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      counter-reset: finding;
+    }
+
+    .findings li {
+      position: relative;
+      padding-left: 40px;
+      counter-increment: finding;
+    }
+
+    .findings li + li { margin-top: 0; }
+
+    .findings li::before {
+      content: counter(finding);
+      position: absolute;
+      left: 0;
+      top: 2px;
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: color-mix(in srgb, #ff5a6a 30%, transparent);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    /* ---------- Etiquetas pequeñas y notas ---------- */
+    .label {
+      margin: 0 0 8px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .note {
+      margin: 10px 0 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    /* ---------- Tablas que genera Python (pandas to_html) ---------- */
+    .table-block {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--divider);
+    }
+
+    /* En el móvil la tabla se desplaza dentro de su caja, no la página entera */
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      background: var(--tint);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* pandas añade style="text-align: right" a la fila de cabecera: se corrige en cada celda */
+    .data-table th,
+    .data-table td {
+      padding: 10px 14px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .data-table th:first-child,
+    .data-table td:first-child { text-align: left; }
+
+    .data-table thead th {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .data-table tbody tr + tr td { border-top: 1px solid var(--divider); }
+    .data-table tbody tr:hover td { background: var(--row-hover); }
+    .data-table td:first-child { font-weight: 600; }
+
+    /* ---------- Umbrales del reto 1 ---------- */
+    .thresholds {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .threshold {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 12px 14px;
+      border: 1px solid var(--divider);
+      border-radius: 12px;
+      background: var(--tint);
+    }
+
+    .threshold-value { font-size: 1.2rem; font-weight: 700; line-height: 1.2; }
+    .threshold-count { display: block; color: var(--text-muted); font-size: 0.8rem; font-weight: 500; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .chip {
+      padding: 3px 10px;
+      border: 1px solid var(--divider);
+      border-radius: 999px;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    /* Los equipos que entran o salen al mover el umbral */
+    .chip-edge {
+      border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ---------- Lista de decisiones ---------- */
+    .method-list { list-style: none; padding-left: 0 !important; }
+
+    .method-list li {
+      padding: 12px 0 0;
+      border-top: 1px solid var(--divider);
+    }
+
+    .method-list li + li { margin-top: 12px; }
+
+    /* ---------- Pasos para reproducir ---------- */
+    .steps { padding-left: 1.4em; }
+    .steps li::marker { color: var(--accent); font-weight: 700; }
+
+    /* ---------- Pie ---------- */
+    footer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 20px;
+      padding: 32px 0 40px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    /* ---------- Móvil ---------- */
+    @media (max-width: 600px) {
+      header { padding-top: 20px; }
+      .card { padding: 18px 16px; border-radius: 16px; }
+      .card h2 { font-size: 1.3rem; }
+      .prose { font-size: 1rem; }
+      .threshold { grid-template-columns: 1fr; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-text">
+        <a class="back-link" href="index.html" data-i18n="back">← Back to the dashboard</a>
+        <h1 data-i18n="title">F1 Dominance: the full report</h1>
+        <p class="subtitle" data-i18n="subtitle">Who ruled each era of Formula 1, 1950-2026, and how much the answer depends on how we look</p>
+      </div>
+      <div class="header-controls">
+        <div class="lang-switch glass" role="group" aria-label="Language" data-i18n-attr="aria-label:language">
+          <button type="button" data-lang="en" lang="en" title="English" aria-label="English">EN</button>
+          <span class="lang-sep" aria-hidden="true">·</span>
+          <button type="button" data-lang="es" lang="es" title="Español" aria-label="Español">ES</button>
+        </div>
+        <button class="theme-toggle glass" id="theme-toggle" type="button" aria-label="Toggle dark mode" data-i18n-attr="aria-label:theme_toggle">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+          </svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <nav class="toc glass" aria-label="Contents" data-i18n-attr="aria-label:toc_label">
+        <p class="label" data-i18n="toc_label">Contents</p>
+        <ol>
+          <li><a href="#summary" data-i18n="s1_title">Summary</a></li>
+          <li><a href="#metric" data-i18n="s2_title">The question and the metric</a></li>
+          <li><a href="#teams" data-i18n="s3_title">Teams, era by era</a></li>
+          <li><a href="#engines" data-i18n="s4_title">Engines: the hidden story</a></li>
+          <li><a href="#factories" data-i18n="s5_title">Factories and lineages</a></li>
+          <li><a href="#decisions" data-i18n="s6_title">How much do the conclusions depend on my decisions?</a></li>
+          <li><a href="#methodology" data-i18n="s7_title">Methodology, decisions and limitations</a></li>
+          <li><a href="#data" data-i18n="s8_title">Data and reproducibility</a></li>
+        </ol>
+      </nav>
+
+      <article class="report">
+
+        <!-- ===================== 1. Summary ===================== -->
+        <section id="summary" class="card glass card-overall prose">
+          <h2><span class="section-num">1</span><span data-i18n="s1_title">Summary</span></h2>
+          <p data-i18n="s1_intro">Five findings from every Formula 1 World Championship race from 1950 to the 2026 Brazilian Grand Prix.</p>
+          <ol class="findings">
+            <li data-i18n="s1_f1"><strong>Dominance comes in waves.</strong> The results fall into six eras, and every one of them has come to an end. Ferrari is the only team with eras of dominance in very different periods of F1.</li>
+            <li data-i18n="s1_f2"><strong>Mercedes in 2014-2016 is the most dominant team spell.</strong> It won 86.3% of races on the 3-year average centred on 2015, the highest peak of any team, and took a record eight consecutive Constructors' Championships (2014-2021).</li>
+            <li data-i18n="s1_f3"><strong>But the highest peak of all belongs to an engine.</strong> Across the three views (teams, engines and factories), the top value is the <strong>Ford</strong> engine's 87.8% in 1973, just above Mercedes' 86.3% in 2015. Ford also spent 16 seasons at 40% or more, more than anyone in any of the three views.</li>
+            <li data-i18n="s1_f4"><strong>The badge on the car hides part of the story.</strong> One engine can win with several teams at once: Renault had two great eras with different partners, and the change at the top in 2025-2026 (McLaren, then Mercedes) is really continuity of the Mercedes engine. Grouping teams by factory joins Tyrrell and Mercedes, two eras about 40 years apart, and shows that the name "mercedes" mixed two different teams.</li>
+            <li data-i18n="s1_f5"><strong>What we see depends on how we look.</strong> The smoothing window and the 40% threshold are my decisions, and changing them changes the picture: McLaren's 93.75% in 1988 becomes 58.3% on a 3-year average, and a 50% threshold leaves out Cooper, which peaked at 49.7%.</li>
+          </ol>
+        </section>
+
+        <!-- ===================== 2. The question and the metric ===================== -->
+        <section id="metric" class="card glass prose">
+          <h2><span class="section-num">2</span><span data-i18n="s2_title">The question and the metric</span></h2>
+          <p data-i18n="s2_p1">The question behind this report is simple: <strong>which teams dominated each era of Formula 1?</strong> To answer it, we need a way to measure dominance that works the same in 1950 and in 2026.</p>
+          <p data-i18n="s2_p2">The obvious candidate would be championship points, but points don't travel well through time. The points system and the number of races per season have changed many times, so points are not comparable across eras.</p>
+          <p data-i18n="s2_p3">That's why the metric here is the <strong>percentage of races won each season</strong>. Winning is the clearest sign of dominance, and a percentage puts every season on the same scale. In 1950 Alfa Romeo won 6 of the 6 races counted: 100%. In 1988 McLaren won 15 of 16: 93.75%. A season of 6 races and one of 24, like 2024 or 2025, can be compared directly.</p>
+          <h3 data-i18n="s2_h_reading">How to read the numbers</h3>
+          <p data-i18n="s2_p4">Single seasons are noisy, so most values in this report are a <strong>3-year centred moving average</strong>: each season is averaged with the one before and the one after. This shows eras instead of year-to-year jumps, but it also flattens peaks. McLaren's 93.75% in 1988, for example, becomes 58.3%.</p>
+          <p data-i18n="s2_p5">A team counts as <strong>dominant</strong> if its moving average reaches <strong>at least 40%</strong> in some season. Both choices are mine, and section 6 checks how much the conclusions change with others.</p>
+        </section>
+
+        <!-- ===================== 3. Teams, era by era ===================== -->
+        <section id="teams" class="card glass prose">
+          <h2><span class="section-num">3</span><span data-i18n="s3_title">Teams, era by era</span></h2>
+          <p data-i18n="s3_intro">Counting wins by official constructor name, ten teams reach the 40% line at some point. Ordered by when they peaked, they draw six eras.</p>
+
+          <h3><span class="era-years">1950-1960</span><span data-i18n="s3_e1_title">The first champions</span></h3>
+          <p data-i18n="s3_e1_p1">F1 began in 1950, and <strong>Alfa Romeo</strong> dominated the first two seasons. In 1950 it won every race counted (6 of 6); in 1951, 4 of 7, with Ferrari taking the other 3. Its peak, 78.6% in 1950, sits at the very start of the timeline, where the moving average is least reliable.</p>
+          <p data-i18n="s3_e1_p2">In 1952-53, with Alberto Ascari, <strong>Ferrari</strong> emerged as the dominant team: 7 of 7 races in 1952 and 7 of 8 in 1953. Its 76.8% in 1952 is still Ferrari's highest peak.</p>
+          <p data-i18n="s3_e1_p3">After them, <strong>Mercedes</strong> showed its ability to win with Juan Manuel Fangio in 1954-55. At the end of the decade, <strong>Cooper</strong> won two titles (1959-60) with Jack Brabham thanks to its revolutionary rear-engined car, a design every team copied soon after. Cooper peaked at 49.7% in 1959.</p>
+          <p data-i18n="s3_e1_p4">A warning about names: the 1950s Mercedes and today's Mercedes share a name but are different teams. The current one returned to F1 in 2010 and became dominant from 2014. Section 5 separates them.</p>
+
+          <h3><span class="era-years">1960-1975</span><span data-i18n="s3_e2_title">Lotus, Brabham and Tyrrell</span></h3>
+          <p data-i18n="s3_e2_p1"><strong>Lotus</strong> emerged as the dominant team with Jim Clark, peaking at 53.3% in 1964, while Ferrari suffered a major setback. In the mid-1960s, Brabham had its best years.</p>
+          <p data-i18n="s3_e2_p2">In the early 1970s <strong>Tyrrell</strong> dominated with Jackie Stewart, although it only crossed the 40% line in one season: 1972, at 43.4%. In the mid-1970s, Ferrari returned strongly with Niki Lauda.</p>
+
+          <h3><span class="era-years">1975-1985</span><span data-i18n="s3_e3_title">A decade without a leader</span></h3>
+          <p data-i18n="s3_e3_p1">This was a fairly diverse era, with no single team standing out above the rest. Ferrari and Williams appear as the most successful teams, closely followed by McLaren, Lotus and, towards the end of the era, Renault.</p>
+
+          <h3><span class="era-years">1985-2000</span><span data-i18n="s3_e4_title">McLaren and Williams take turns</span></h3>
+          <p data-i18n="s3_e4_p1">The diversity disappeared and two teams took turns at the top. <strong>McLaren</strong> ruled the late 1980s with Alain Prost and Ayrton Senna: 15 wins out of 16 races in 1988 and a peak of 64.6% in 1989. <strong>Williams</strong> followed in the early 1990s, peaking at 56.2% in 1992, with 7 seasons at 40% or more.</p>
+          <p data-i18n="s3_e4_p2"><strong>Benetton</strong> won its first titles with Michael Schumacher in 1994-95, crossing the line by a few tenths (40.3% in 1994). McLaren returned to the front in the late 1990s with Mika Häkkinen, and at the end of the era Ferrari regained its strength. Lotus and Brabham disappeared for good, never to return among the most successful teams.</p>
+
+          <h3><span class="era-years">2000-2010</span><span data-i18n="s3_e5_title">Ferrari and Schumacher</span></h3>
+          <p data-i18n="s3_e5_p1">In the early 2000s <strong>Ferrari</strong> returned to the top as the most successful team, with Michael Schumacher. Williams began its definitive decline. Renault returned to the top, matching McLaren in wins, but faded again by the end of the decade. McLaren remained one of the leading teams, but Ferrari dominated the record books of this era.</p>
+          <p data-i18n="s3_e5_p2">Adding up all its eras, Ferrari spent 12 seasons at 40% or more, more than any other team.</p>
+
+          <h3><span class="era-years">2010-2026</span><span data-i18n="s3_e6_title">Red Bull and Mercedes</span></h3>
+          <p data-i18n="s3_e6_p1"><strong>Red Bull</strong> improved quickly and dominated 2010-2013 with Sebastian Vettel. Then <strong>Mercedes</strong> began the most dominant period in F1 history, with Lewis Hamilton: 86.3% of races won on the 3-year average centred on 2015, and a record eight consecutive Constructors' Championships (2014-2021).</p>
+          <p data-i18n="s3_e6_p2">Red Bull caught up in the early 2020s with Max Verstappen, peaking at 74.2% in 2022. Ferrari and McLaren remained top teams, generally well behind both. McLaren improved and won the 2025 Constructors' Championship.</p>
+          <p data-i18n="s3_e6_p3">After a sharp decline, Mercedes is dominant again. In 2026 (provisional, 20 races so far) it has won 60% of the races, ahead of McLaren and Red Bull (15% each) and Ferrari (10%).</p>
+
+          <div class="table-block">
+            <p class="label" data-i18n="team_table_label">Dominant teams: peaks on the 3-year moving average</p>
+            <div class="table-wrap" data-only-lang="en">
+              {{TEAM_TABLE_EN}}
+            </div>
+            <div class="table-wrap" data-only-lang="es">
+              {{TEAM_TABLE_ES}}
+            </div>
+            <p class="note" data-i18n="team_table_note">"Seasons at 40% or more" counts the seasons in which the 3-year moving average reaches 40%. The 10 seasons of "mercedes" mix the 1950s team and the current one (see section 5).</p>
+          </div>
+        </section>
+
+        <!-- ===================== 4. Engines ===================== -->
+        <section id="engines" class="card glass prose">
+          <h2><span class="section-num">4</span><span data-i18n="s4_title">Engines: the hidden story</span></h2>
+          <p data-i18n="s4_p1">A team builds its own car, but many teams bought their engines from someone else. So one engine could win with several teams at the same time, and engines tell a different story from teams.</p>
+          <p data-i18n="s4_p2">Only Ferrari, which builds both, looks the same in both views: a peak of 76.8% in 1952 and 12 seasons at 40% or more, as a team and as an engine.</p>
+
+          <h3 data-i18n="s4_h_ford">Ford: the longest and strongest era</h3>
+          <p data-i18n="s4_p3">The <strong>Ford Cosworth DFV</strong> was sold to almost any team (Lotus, Tyrrell, McLaren, Williams, Brabham…). Its wins were spread across several teams, so Ford never appears among the dominant teams. But as an engine it had one of the longest and strongest eras in F1 history, from the late 1960s to the early 1980s.</p>
+          <p data-i18n="s4_p4">Its peak, <strong>87.8% in 1973</strong>, is the highest value in the whole analysis, above Mercedes' 86.3% in 2015. And its <strong>16 seasons at 40% or more</strong> are the most in any of the three views.</p>
+
+          <h3 data-i18n="s4_h_renault">Renault: two eras, different teams</h3>
+          <p data-i18n="s4_p5">Renault had two great eras with different teams: in the 1990s with Williams and Benetton, when it peaked at 74.0% in 1996, and in 2010-2013 with Red Bull. In total, 10 seasons at 40% or more. As a team it was never as dominant: it reaches 30% at its best, but not 40%.</p>
+
+          <h3 data-i18n="s4_h_others">Other engines at the top</h3>
+          <!-- REVIEW: los socios de Climax (Cooper y Lotus) y de TAG (McLaren) no están en el notebook; son contexto histórico añadido. -->
+          <p data-i18n="s4_p6"><strong>Climax</strong>, which powered Cooper and Lotus, peaked at 63.0% in 1960 and stayed at 40% or more for 6 seasons. <strong>TAG</strong>, McLaren's engine in the mid-1980s, reached 45.8% in 1985.</p>
+          <!-- REVIEW: que la media de Honda en 1988 sea más alta porque en 1987 también ganó con otros equipos (Williams y Lotus) es contexto histórico añadido, no sale del notebook. -->
+          <p data-i18n="s4_p7"><strong>Honda</strong> shows how an engine and a team can read the same season differently. In 1988 both Honda and McLaren won 15 of 16 races (93.75%), but on the 3-year average Honda gets 75.0% and McLaren 58.3%, because in the neighbouring seasons Honda also won with other teams.</p>
+
+          <h3 data-i18n="s4_h_continuity">Continuity that looks like change</h3>
+          <p data-i18n="s4_p8">Among teams, McLaren led in 2025 and Mercedes in 2026. But both use Mercedes engines, so the <strong>Mercedes engine</strong> dominates both seasons. Winning with customer teams too, the Mercedes engine spent 15 seasons at 40% or more, against 10 for the Mercedes team.</p>
+          <p data-i18n="s4_p9">One caveat: engines are counted by their official name. Honda's recent era with Red Bull is split between "honda" and "honda-rbpt" (Red Bull Powertrains, built by Honda), so it looks smaller than it really was: "honda-rbpt" alone peaks at 55.4% in 2024.</p>
+
+          <div class="table-block">
+            <p class="label" data-i18n="engine_table_label">Dominant engines: peaks on the 3-year moving average</p>
+            <div class="table-wrap" data-only-lang="en">
+              {{ENGINE_TABLE_EN}}
+            </div>
+            <div class="table-wrap" data-only-lang="es">
+              {{ENGINE_TABLE_ES}}
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== 5. Factories and lineages ===================== -->
+        <section id="factories" class="card glass prose">
+          <h2><span class="section-num">5</span><span data-i18n="s5_title">Factories and lineages</span></h2>
+          <p data-i18n="s5_p1">Teams change names and owners. Counting by name treats Toro Rosso and AlphaTauri as two different teams, although they came from the same factory.</p>
+          <p data-i18n="s5_p2">To group them, I used the F1DB constructors chronology, which lists the names each factory has had and the years of each one. Each factory is labelled with its first and last name: the one that started as Tyrrell (1970-1998) and is Mercedes today becomes <strong>tyrrell → mercedes</strong>, and Toro Rosso (2006-2019) belongs to <strong>minardi → racing-bulls</strong>. Teams that never changed name, like Ferrari, keep their own.</p>
+          <p data-i18n="s5_p3">Wins are matched using both the name and the year. That matters: Renault, for example, appears in the Enstone family (<strong>toleman → alpine</strong>) in two separate periods, 2002-2011 and 2016-2020.</p>
+
+          <h3 data-i18n="s5_h_eras">The eras barely change, but the stories do</h3>
+          <p data-i18n="s5_p4">The peaks of dominance are almost the same as when we count by name, because most name changes happened between eras of dominance, not during them. What changes is how some histories are told: Benetton now appears as part of the Enstone family ("toleman → alpine", 40.3% in 1994), and Red Bull includes its Stewart years ("stewart → red-bull", 74.2% in 2022).</p>
+
+          <h3 data-i18n="s5_h_tyrrell">One factory, two eras 40 years apart</h3>
+          <p data-i18n="s5_p5">"tyrrell → mercedes" shows one factory with two great eras about 40 years apart: Tyrrell with Jackie Stewart in the early 1970s and Mercedes with Lewis Hamilton in 2014-2020. In between sits Brawn's 2009 season, when the factory won 8 of 17 races (47.1%), ahead of "stewart → red-bull" with 6 (35.3%).</p>
+          <p data-i18n="s5_p6">That's why its <strong>9 seasons at 40% or more</strong> are not all Mercedes seasons: they also include <strong>Tyrrell's 1972 season</strong>.</p>
+
+          <h3 data-i18n="s5_h_mercedes">Two teams called "mercedes"</h3>
+          <p data-i18n="s5_p7">Grouping by factory also fixes an error of the analysis by name: <strong>the name "mercedes" mixed two different teams</strong>, the 1950s works team and the current one. Using both the name and the year separates them. The 1950s team is now its own factory, "mercedes", with a peak of 44.4% in 1954 and 2 seasons at 40% or more.</p>
+          <!-- REVIEW: el desglose 10 = 2 + 8 y 9 = 8 + 1 no aparece escrito en el notebook; lo he deducido de sus tablas de picos (equipo mercedes 10, fábrica mercedes 2, tyrrell 1, tyrrell → mercedes 9). Compruébalo con smooth y factory_smooth. -->
+          <p data-i18n="s5_p8">This explains the numbers: the 10 seasons counted for the name "mercedes" were 2 from the 1950s team plus 8 from the current one, and the 9 of "tyrrell → mercedes" are those same 8 plus Tyrrell's 1972.</p>
+
+          <h3 data-i18n="s5_h_same">What is "the same team"?</h3>
+          <p data-i18n="s5_p9">"The same factory" is a definition, not an absolute truth. The Tyrrell of 1971 and the Mercedes of 2015 shared a factory, but not owners, people or budgets. Whether they are "the same team" depends on the question we want to answer.</p>
+
+          <div class="table-block">
+            <p class="label" data-i18n="factory_table_label">Dominant factories: peaks on the 3-year moving average</p>
+            <div class="table-wrap" data-only-lang="en">
+              {{FACTORY_TABLE_EN}}
+            </div>
+            <div class="table-wrap" data-only-lang="es">
+              {{FACTORY_TABLE_ES}}
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================== 6. Sensitivity (challenge 1) ===================== -->
+        <section id="decisions" class="card glass prose">
+          <h2><span class="section-num">6</span><span data-i18n="s6_title">How much do the conclusions depend on my decisions?</span></h2>
+          <p data-i18n="s6_p1">Two decisions shape everything above: how many years to average, and where to draw the line for "dominant". Neither is objective, so I tested both.</p>
+
+          <h3 data-i18n="s6_h_window">The moving-average window</h3>
+          <p data-i18n="s6_p2">I compared McLaren's line with windows of 1, 3, 5 and 10 years. The more years we average, the flatter the lines become. The biggest successes and the worst failures disappear, and what remains is the long-term trend, which shows the general direction of each team. McLaren's 1988, for example, goes from 93.75% as a single season to 58.3% on 3 years.</p>
+          <p data-i18n="s6_p3">Which window is better depends on the question. Shorter windows show individual seasons, but also more noise. Longer windows show the big picture, but hide short or recent eras, such as McLaren's 2025. On the dashboard, the slider lets you try every window from 1 to 10 years.</p>
+
+          <h3 data-i18n="s6_h_threshold">The dominance threshold</h3>
+          <p data-i18n="s6_p4">Moving the line from 40% to 30% or 50% changes who is in. The teams in red are the ones that enter or leave:</p>
+          <div class="thresholds">
+            <div class="threshold">
+              <div class="threshold-value">30% <span class="threshold-count" data-i18n="thr_12">12 teams</span></div>
+              <div class="chips">
+                <span class="chip">Alfa Romeo</span><span class="chip">Benetton</span><span class="chip">Cooper</span><span class="chip">Ferrari</span><span class="chip">Lotus</span><span class="chip">McLaren</span><span class="chip">Mercedes</span><span class="chip">Red Bull</span><span class="chip chip-edge">Renault</span><span class="chip">Tyrrell</span><span class="chip chip-edge">Vanwall</span><span class="chip">Williams</span>
+              </div>
+            </div>
+            <div class="threshold">
+              <div class="threshold-value">40% <span class="threshold-count" data-i18n="thr_10">10 teams</span></div>
+              <div class="chips">
+                <span class="chip">Alfa Romeo</span><span class="chip">Benetton</span><span class="chip">Cooper</span><span class="chip">Ferrari</span><span class="chip">Lotus</span><span class="chip">McLaren</span><span class="chip">Mercedes</span><span class="chip">Red Bull</span><span class="chip">Tyrrell</span><span class="chip">Williams</span>
+              </div>
+            </div>
+            <div class="threshold">
+              <div class="threshold-value">50% <span class="threshold-count" data-i18n="thr_7">7 teams</span></div>
+              <div class="chips">
+                <span class="chip">Alfa Romeo</span><span class="chip">Ferrari</span><span class="chip">Lotus</span><span class="chip">McLaren</span><span class="chip">Mercedes</span><span class="chip">Red Bull</span><span class="chip">Williams</span>
+              </div>
+            </div>
+          </div>
+          <p data-i18n="s6_p5">Seven teams pass all three thresholds: Alfa Romeo, Ferrari, Lotus, McLaren, Mercedes, Red Bull and Williams. For the rest, it depends on where we draw the line. With 50%, Benetton (40.3%), Tyrrell (43.4%) and Cooper (49.7%) drop out.</p>
+          <p data-i18n="s6_p6">Any cut-off is arbitrary at the border. Cooper, which peaked just under 50%, would be left out of the chart and the analysis. A threshold is useful to focus on the top teams, but we should always keep in mind that some teams came very close to that level of success and are not shown.</p>
+        </section>
+
+        <!-- ===================== 7. Methodology ===================== -->
+        <section id="methodology" class="card glass prose">
+          <h2><span class="section-num">7</span><span data-i18n="s7_title">Methodology, decisions and limitations</span></h2>
+          <p data-i18n="s7_intro">Every number in this report depends on these choices. They are all in the notebook, next to the code that applies them.</p>
+          <ul class="method-list">
+            <li data-i18n="m_source"><strong>Source:</strong> F1DB release v2026.20.0 (data up to the 2026 Brazilian Grand Prix), licensed under CC BY 4.0.</li>
+            <li data-i18n="m_metric"><strong>Metric: % of races won per season</strong>, not points. Points systems and the number of races per season have changed many times, so points are not comparable across eras.</li>
+            <li data-i18n="m_indy"><strong>Indianapolis 500 excluded (1950-1960).</strong> It counted for the World Championship, but it was a separate American race with different cars and teams. Keeping it would understate the dominance of F1 teams (e.g. Alfa Romeo in 1950: 6/6 = 100% instead of 6/7). It was filtered by Grand Prix, not by circuit, to keep the 2000-2007 United States Grands Prix held at Indianapolis. This takes the count from 1,169 races to 1,158.</li>
+            <li data-i18n="m_shared"><strong>Shared-car wins counted once.</strong> In three races (1951, 1956, 1957), two drivers of the same team shared the winning car and both are credited with the win. Each race counts as one win for the team: 1,158 race wins in total.</li>
+            <li data-i18n="m_names"><strong>Teams counted by official constructor name, not by factory.</strong> For example, Toro Rosso and AlphaTauri are counted separately, Lotus (1958-1994) and Lotus F1 (2012-2015) are different teams, and "mercedes" covers both the 1950s works team and the current team.</li>
+            <li data-i18n="m_average"><strong>3-year centred moving average</strong> to show eras instead of year-to-year noise. It smooths peaks (McLaren 1988: 93.75% becomes 58.3%) and is less reliable at the edges (1950 and 2026).</li>
+            <li data-i18n="m_threshold"><strong>Dominant = a peak of at least 40%</strong> on the moving average. Selecting the teams with the most total wins was biased towards long-lived teams and hid short eras of dominance, such as Alfa Romeo's. The 40% threshold is a judgement call, and the same one is used for engines and factories.</li>
+            <li data-i18n="m_2026"><strong>The 2026 season is incomplete</strong> (20 races so far), so its values are provisional.</li>
+            <li data-i18n="m_engines"><strong>Engines counted by their official name.</strong> Honda's recent era with Red Bull is split between "honda" and "honda-rbpt" (Red Bull Powertrains, built by Honda), so it looks smaller than it really was.</li>
+            <li data-i18n="m_factories"><strong>Factories defined by the F1DB constructors chronology</strong>, matched by name and year and labelled "first name → last name". "The same factory" is a definition, not an absolute truth: the Tyrrell of 1971 and the Mercedes of 2015 shared a factory, but not owners, people or budgets.</li>
+          </ul>
+        </section>
+
+        <!-- ===================== 8. Data and reproducibility ===================== -->
+        <section id="data" class="card glass prose">
+          <h2><span class="section-num">8</span><span data-i18n="s8_title">Data and reproducibility</span></h2>
+          <p data-i18n="s8_p1">All the data comes from <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB</a>, an open database of Formula 1 history, release <strong>v2026.20.0</strong>, which covers every race up to the 2026 Brazilian Grand Prix. It is published under the <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> licence, which allows reuse with attribution.</p>
+          <p data-i18n="s8_p2">The code is on GitHub at <a href="https://github.com/AliR-lab/f1-analytics" target="_blank" rel="noopener">AliR-lab/f1-analytics</a>. The whole analysis lives in a single notebook, <code>notebooks/01_dominant_teams.ipynb</code>. To repeat it:</p>
+          <ol class="steps">
+            <li>
+              <span data-i18n="s8_step1">Clone the repository and install the dependencies with <a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener">uv</a>:</span>
+              <pre><code>git clone https://github.com/AliR-lab/f1-analytics.git
+cd f1-analytics
+uv sync</code></pre>
+            </li>
+            <li>
+              <!-- REVIEW: comprueba que la release v2026.20.0 de F1DB publica los CSV en un zip (normalmente f1db-csv.zip) en esta URL. -->
+              <span data-i18n="s8_step2">Download the CSV files of <a href="https://github.com/f1db/f1db/releases/tag/v2026.20.0" target="_blank" rel="noopener">F1DB release v2026.20.0</a> and unzip them into <code>data/raw/f1db/</code>. The <code>data/</code> folder is not in the repository. The notebook uses three files: <code>f1db-races-race-results.csv</code>, <code>f1db-races.csv</code> and <code>f1db-constructors-chronology.csv</code>.</span>
+            </li>
+            <li>
+              <span data-i18n="s8_step3">Open JupyterLab and run every cell of the notebook, from top to bottom:</span>
+              <pre><code>uv run jupyter lab</code></pre>
+            </li>
+            <li>
+              <!-- REVIEW: hoy el notebook solo genera docs/index.html; la celda que rellena esta plantilla y escribe docs/report.html aún no existe. -->
+              <span data-i18n="s8_step4">The notebook saves the charts in <code>figures/</code> and builds the dashboard and this report in <code>docs/</code>.</span>
+            </li>
+          </ol>
+          <p data-i18n="s8_p3">With the same release you should get exactly the same numbers. A newer release will add races and change the 2026 values, which are still provisional.</p>
+        </section>
+
+      </article>
+    </main>
+
+    <footer>
+      <span><span data-i18n="footer_data">Data:</span> <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB (CC BY 4.0)</a></span>
+      <span><a href="https://github.com/AliR-lab/f1-analytics/blob/main/notebooks/01_dominant_teams.ipynb" target="_blank" rel="noopener" data-i18n="footer_analysis">Full analysis</a></span>
+      <span data-i18n="footer_made_by">Made by AliR-lab</span>
+    </footer>
+  </div>
+
+  <script>
+    // ---------- Tema ----------
+    function setTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      try { localStorage.setItem("theme", theme); } catch (e) {}
+    }
+
+    document.getElementById("theme-toggle").addEventListener("click", function () {
+      var current = document.documentElement.dataset.theme;
+      setTheme(current === "dark" ? "light" : "dark");
+    });
+
+    // ---------- Índice: marca la sección que se está leyendo ----------
+    (function () {
+      if (typeof IntersectionObserver === "undefined") return;
+
+      var links = {};
+      document.querySelectorAll(".toc a").forEach(function (a) {
+        links[a.getAttribute("href").slice(1)] = a;
+      });
+
+      // Una sección cuenta como "actual" cuando cruza la franja superior de la pantalla.
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          Object.keys(links).forEach(function (id) {
+            links[id].setAttribute("aria-current", id === entry.target.id ? "true" : "false");
+          });
+        });
+      }, { rootMargin: "-15% 0px -75% 0px" });
+
+      document.querySelectorAll(".report > section").forEach(function (section) {
+        observer.observe(section);
+      });
+    })();
+  </script>
+
+  <script>
+    // ---------- Traducciones ----------
+    // Mismo sistema que el dashboard: cada clave corresponde a un data-i18n (o data-i18n-attr).
+    // Diferencia: el inglés no se repite aquí, se lee del propio HTML al cargar la página,
+    // para no mantener dos copias de un texto tan largo.
+    var translations = {
+      en: {},
+
+      es: {
+        doc_title: "Informe sobre el dominio en la F1",
+        meta_description: "Quién mandó en cada era de la Fórmula 1, 1950-2026: el informe completo que acompaña al panel",
+        back: "← Volver al panel",
+        title: "Dominio en la F1: el informe completo",
+        subtitle: "Quién mandó en cada era de la Fórmula 1, 1950-2026, y cuánto depende la respuesta de cómo miramos",
+        language: "Idioma",
+        theme_toggle: "Activar o desactivar el modo oscuro",
+        toc_label: "Índice",
+
+        s1_title: "Resumen",
+        s1_intro: "Cinco hallazgos a partir de todas las carreras del Campeonato del Mundo de Fórmula 1, desde 1950 hasta el Gran Premio de Brasil de 2026.",
+        s1_f1: "<strong>El dominio llega por oleadas.</strong> Los resultados se agrupan en seis eras, y todas han acabado tarde o temprano. Ferrari es el único equipo con eras de dominio en épocas muy distintas de la F1.",
+        s1_f2: "<strong>Mercedes en 2014-2016 es la racha más dominante de un equipo.</strong> Ganó el 86,3% de las carreras en la media de tres años centrada en 2015, el pico más alto de cualquier equipo, y logró un récord de ocho Campeonatos de Constructores seguidos (2014-2021).",
+        s1_f3: "<strong>Pero el pico más alto de todos es el de un motor.</strong> Entre las tres miradas (equipos, motores y fábricas), el valor máximo es el 87,8% del motor <strong>Ford</strong> en 1973, justo por encima del 86,3% de Mercedes en 2015. Ford pasó además 16 temporadas en el 40% o más, más que nadie en cualquiera de las tres miradas.",
+        s1_f4: "<strong>El escudo del coche esconde parte de la historia.</strong> Un mismo motor puede ganar con varios equipos a la vez: Renault vivió dos grandes eras con socios distintos, y el cambio en la cima de 2025-2026 (McLaren y luego Mercedes) es en realidad continuidad del motor Mercedes. Agrupar los equipos por fábrica une a Tyrrell y Mercedes, dos eras separadas por unos 40 años, y muestra que el nombre «mercedes» mezclaba dos equipos distintos.",
+        s1_f5: "<strong>Lo que vemos depende de cómo miramos.</strong> La ventana de suavizado y el umbral del 40% son decisiones mías, y al cambiarlas cambia el panorama: el 93,75% de McLaren en 1988 se queda en un 58,3% con la media de tres años, y un umbral del 50% deja fuera a Cooper, cuyo pico fue del 49,7%.",
+
+        s2_title: "La pregunta y la métrica",
+        s2_p1: "La pregunta de este informe es sencilla: <strong>¿qué equipos dominaron cada era de la Fórmula 1?</strong> Para responderla hace falta una forma de medir el dominio que funcione igual en 1950 que en 2026.",
+        s2_p2: "La candidata obvia serían los puntos del campeonato, pero los puntos no viajan bien en el tiempo. El sistema de puntuación y el número de carreras por temporada han cambiado muchas veces, así que los puntos no son comparables entre épocas.",
+        s2_p3: "Por eso la métrica es el <strong>porcentaje de carreras ganadas en cada temporada</strong>. Ganar es la señal más clara de dominio, y un porcentaje pone todas las temporadas en la misma escala. En 1950 Alfa Romeo ganó las 6 carreras que se cuentan: un 100%. En 1988 McLaren ganó 15 de 16: un 93,75%. Una temporada de 6 carreras y otra de 24, como 2024 o 2025, se pueden comparar directamente.",
+        s2_h_reading: "Cómo leer las cifras",
+        s2_p4: "Las temporadas sueltas tienen mucho ruido, así que la mayoría de los valores de este informe son una <strong>media móvil centrada de tres años</strong>: cada temporada se promedia con la anterior y la siguiente. Así se ven las eras en lugar de los saltos de un año a otro, pero también se aplanan los picos. El 93,75% de McLaren en 1988, por ejemplo, se queda en un 58,3%.",
+        s2_p5: "Un equipo cuenta como <strong>dominante</strong> si su media móvil llega <strong>al menos al 40%</strong> en alguna temporada. Las dos decisiones son mías, y la sección 6 comprueba cuánto cambian las conclusiones con otras.",
+
+        s3_title: "Equipos, era a era",
+        s3_intro: "Contando las victorias por el nombre oficial del constructor, diez equipos llegan al 40% en algún momento. Ordenados por la fecha de su pico, dibujan seis eras.",
+        s3_e1_title: "Los primeros campeones",
+        s3_e1_p1: "La F1 empezó en 1950, y <strong>Alfa Romeo</strong> dominó las dos primeras temporadas. En 1950 ganó todas las carreras que se cuentan (6 de 6); en 1951, 4 de 7, y Ferrari se llevó las otras 3. Su pico, un 78,6% en 1950, está justo al principio de la serie, donde la media móvil es menos fiable.",
+        s3_e1_p2: "En 1952-53, con Alberto Ascari, <strong>Ferrari</strong> se convirtió en el equipo dominante: 7 de 7 carreras en 1952 y 7 de 8 en 1953. Su 76,8% de 1952 sigue siendo el pico más alto de Ferrari.",
+        s3_e1_p3: "Después, <strong>Mercedes</strong> demostró su capacidad para ganar con Juan Manuel Fangio en 1954-55. Al final de la década, <strong>Cooper</strong> ganó dos títulos (1959-60) con Jack Brabham gracias a su revolucionario coche de motor trasero, un diseño que todos los equipos copiaron poco después. El pico de Cooper fue del 49,7% en 1959.",
+        s3_e1_p4: "Un aviso sobre los nombres: el Mercedes de los años 50 y el Mercedes actual comparten nombre, pero son equipos distintos. El actual volvió a la F1 en 2010 y empezó a dominar en 2014. La sección 5 los separa.",
+        s3_e2_title: "Lotus, Brabham y Tyrrell",
+        s3_e2_p1: "<strong>Lotus</strong> se convirtió en el equipo dominante con Jim Clark, con un pico del 53,3% en 1964, mientras Ferrari sufría un gran bache. A mediados de los 60, Brabham vivió sus mejores años.",
+        s3_e2_p2: "A principios de los 70 dominó <strong>Tyrrell</strong> con Jackie Stewart, aunque solo superó el 40% en una temporada: 1972, con un 43,4%. A mediados de los 70, Ferrari volvió con fuerza con Niki Lauda.",
+        s3_e3_title: "Una década sin líder",
+        s3_e3_p1: "Fue una era bastante variada, sin un equipo que destacara claramente sobre los demás. Ferrari y Williams aparecen como los más exitosos, seguidos de cerca por McLaren, Lotus y, hacia el final de la era, Renault.",
+        s3_e4_title: "McLaren y Williams se turnan",
+        s3_e4_p1: "La variedad desapareció y dos equipos se turnaron en la cima. <strong>McLaren</strong> mandó a finales de los 80 con Alain Prost y Ayrton Senna: 15 victorias en 16 carreras en 1988 y un pico del 64,6% en 1989. <strong>Williams</strong> tomó el relevo a principios de los 90, con un pico del 56,2% en 1992 y 7 temporadas en el 40% o más.",
+        s3_e4_p2: "<strong>Benetton</strong> ganó sus primeros títulos con Michael Schumacher en 1994-95 y superó la línea por unas décimas (40,3% en 1994). McLaren volvió a la cabeza a finales de los 90 con Mika Häkkinen, y al final de la era Ferrari recuperó su fuerza. Lotus y Brabham desaparecieron para siempre de entre los equipos más exitosos.",
+        s3_e5_title: "Ferrari y Schumacher",
+        s3_e5_p1: "A principios de los 2000, <strong>Ferrari</strong> volvió a la cima como el equipo más exitoso, con Michael Schumacher. Williams inició su declive definitivo. Renault volvió a lo más alto, igualando a McLaren en victorias, pero se apagó de nuevo al final de la década. McLaren siguió entre los mejores, pero Ferrari dominó los libros de récords de esta era.",
+        s3_e5_p2: "Sumando todas sus eras, Ferrari pasó 12 temporadas en el 40% o más, más que ningún otro equipo.",
+        s3_e6_title: "Red Bull y Mercedes",
+        s3_e6_p1: "<strong>Red Bull</strong> mejoró rápido y dominó 2010-2013 con Sebastian Vettel. Después, <strong>Mercedes</strong> inició el periodo más dominante de la historia de la F1, con Lewis Hamilton: un 86,3% de carreras ganadas en la media de tres años centrada en 2015 y un récord de ocho Campeonatos de Constructores seguidos (2014-2021).",
+        s3_e6_p2: "Red Bull volvió a alcanzarlo a principios de los 2020 con Max Verstappen, con un pico del 74,2% en 2022. Ferrari y McLaren siguieron entre los mejores, por lo general muy por detrás de ambos. McLaren mejoró y ganó el Campeonato de Constructores de 2025.",
+        s3_e6_p3: "Tras una fuerte caída, Mercedes vuelve a dominar. En 2026 (provisional, 20 carreras por ahora) ha ganado el 60% de las carreras, por delante de McLaren y Red Bull (15% cada uno) y Ferrari (10%).",
+        team_table_label: "Equipos dominantes: picos en la media móvil de tres años",
+        team_table_note: "«Temporadas en el 40% o más» cuenta las temporadas en las que la media móvil de tres años llega al 40%. Las 10 temporadas de «mercedes» mezclan el equipo de los años 50 y el actual (ver la sección 5).",
+
+        s4_title: "Motores: la historia oculta",
+        s4_p1: "Un equipo construye su propio coche, pero muchos equipos compraban el motor a otro fabricante. Así, un mismo motor podía ganar con varios equipos a la vez, y los motores cuentan una historia distinta a la de los equipos.",
+        s4_p2: "Solo Ferrari, que fabrica las dos cosas, se ve igual en las dos miradas: un pico del 76,8% en 1952 y 12 temporadas en el 40% o más, como equipo y como motor.",
+        s4_h_ford: "Ford: la era más larga y más fuerte",
+        s4_p3: "El <strong>Ford Cosworth DFV</strong> se vendió a casi cualquier equipo (Lotus, Tyrrell, McLaren, Williams, Brabham…). Sus victorias se repartían entre varios equipos, así que Ford nunca aparece entre los equipos dominantes. Pero como motor vivió una de las eras más largas y fuertes de la historia de la F1, desde finales de los 60 hasta principios de los 80.",
+        s4_p4: "Su pico, un <strong>87,8% en 1973</strong>, es el valor más alto de todo el análisis, por encima del 86,3% de Mercedes en 2015. Y sus <strong>16 temporadas en el 40% o más</strong> son las más de cualquiera de las tres miradas.",
+        s4_h_renault: "Renault: dos eras, equipos distintos",
+        s4_p5: "Renault vivió dos grandes eras con equipos distintos: en los 90 con Williams y Benetton, con un pico del 74,0% en 1996, y en 2010-2013 con Red Bull. En total, 10 temporadas en el 40% o más. Como equipo nunca fue tan dominante: en su mejor momento llega al 30%, pero no al 40%.",
+        s4_h_others: "Otros motores en la cima",
+        s4_p6: "<strong>Climax</strong>, que impulsaba a Cooper y Lotus, tuvo su pico en 1960 con un 63,0% y se mantuvo 6 temporadas en el 40% o más. <strong>TAG</strong>, el motor de McLaren a mediados de los 80, llegó al 45,8% en 1985.",
+        s4_p7: "<strong>Honda</strong> muestra cómo un motor y un equipo pueden leer la misma temporada de forma distinta. En 1988 Honda y McLaren ganaron 15 de 16 carreras (93,75%), pero en la media de tres años Honda tiene un 75,0% y McLaren un 58,3%, porque en las temporadas vecinas Honda también ganó con otros equipos.",
+        s4_h_continuity: "Continuidad que parece cambio",
+        s4_p8: "Entre los equipos, McLaren fue el mejor en 2025 y Mercedes en 2026. Pero los dos llevan motor Mercedes, así que el <strong>motor Mercedes</strong> domina ambas temporadas. Como también gana con equipos clientes, el motor Mercedes pasó 15 temporadas en el 40% o más, frente a las 10 del equipo Mercedes.",
+        s4_p9: "Un matiz: los motores se cuentan por su nombre oficial. La era reciente de Honda con Red Bull se reparte entre «honda» y «honda-rbpt» (Red Bull Powertrains, fabricado por Honda), así que parece más pequeña de lo que fue: «honda-rbpt» por sí solo llega a un pico del 55,4% en 2024.",
+        engine_table_label: "Motores dominantes: picos en la media móvil de tres años",
+
+        s5_title: "Fábricas y linajes",
+        s5_p1: "Los equipos cambian de nombre y de dueño. Contar por nombre trata a Toro Rosso y AlphaTauri como dos equipos distintos, aunque salían de la misma fábrica.",
+        s5_p2: "Para agruparlos usé la cronología de constructores de F1DB, que recoge los nombres que ha tenido cada fábrica y los años de cada uno. Cada fábrica se etiqueta con su primer y su último nombre: la que empezó como Tyrrell (1970-1998) y hoy es Mercedes pasa a ser <strong>tyrrell → mercedes</strong>, y Toro Rosso (2006-2019) pertenece a <strong>minardi → racing-bulls</strong>. Los equipos que nunca cambiaron de nombre, como Ferrari, conservan el suyo.",
+        s5_p3: "Las victorias se asignan usando a la vez el nombre y el año. Esto importa: Renault, por ejemplo, aparece en la familia de Enstone (<strong>toleman → alpine</strong>) en dos periodos separados, 2002-2011 y 2016-2020.",
+        s5_h_eras: "Las eras apenas cambian, pero las historias sí",
+        s5_p4: "Los picos de dominio son casi los mismos que contando por nombre, porque la mayoría de los cambios de nombre ocurrieron entre eras de dominio, no durante ellas. Lo que cambia es cómo se cuentan algunas historias: Benetton aparece ahora como parte de la familia de Enstone («toleman → alpine», 40,3% en 1994), y Red Bull incluye sus años como Stewart («stewart → red-bull», 74,2% en 2022).",
+        s5_h_tyrrell: "Una fábrica, dos eras separadas por 40 años",
+        s5_p5: "«tyrrell → mercedes» muestra una sola fábrica con dos grandes eras separadas por unos 40 años: Tyrrell con Jackie Stewart a principios de los 70 y Mercedes con Lewis Hamilton en 2014-2020. Entre medias está la temporada 2009 de Brawn, en la que la fábrica ganó 8 de 17 carreras (47,1%), por delante de «stewart → red-bull» con 6 (35,3%).",
+        s5_p6: "Por eso sus <strong>9 temporadas en el 40% o más</strong> no son todas de Mercedes: también incluyen <strong>la temporada 1972 de Tyrrell</strong>.",
+        s5_h_mercedes: "Dos equipos llamados «mercedes»",
+        s5_p7: "Agrupar por fábrica corrige además un error del análisis por nombre: <strong>el nombre «mercedes» mezclaba dos equipos distintos</strong>, el equipo oficial de los años 50 y el actual. Usar a la vez el nombre y el año los separa. El equipo de los 50 es ahora su propia fábrica, «mercedes», con un pico del 44,4% en 1954 y 2 temporadas en el 40% o más.",
+        s5_p8: "Esto explica las cifras: las 10 temporadas del nombre «mercedes» eran 2 del equipo de los 50 más 8 del actual, y las 9 de «tyrrell → mercedes» son esas mismas 8 más la de Tyrrell en 1972.",
+        s5_h_same: "¿Qué es «el mismo equipo»?",
+        s5_p9: "«La misma fábrica» es una definición, no una verdad absoluta. El Tyrrell de 1971 y el Mercedes de 2015 compartían fábrica, pero no dueños, personas ni presupuestos. Que sean «el mismo equipo» depende de la pregunta que queramos responder.",
+        factory_table_label: "Fábricas dominantes: picos en la media móvil de tres años",
+
+        s6_title: "¿Cuánto dependen las conclusiones de mis decisiones?",
+        s6_p1: "Dos decisiones condicionan todo lo anterior: cuántos años promediar y dónde trazar la línea de «dominante». Ninguna es objetiva, así que puse a prueba las dos.",
+        s6_h_window: "La ventana de la media móvil",
+        s6_p2: "Comparé la línea de McLaren con ventanas de 1, 3, 5 y 10 años. Cuantos más años promediamos, más planas quedan las líneas. Los mayores éxitos y los peores fracasos desaparecen, y lo que queda es la tendencia a largo plazo, que muestra la dirección general de cada equipo. El 1988 de McLaren, por ejemplo, pasa de un 93,75% como temporada suelta a un 58,3% con tres años.",
+        s6_p3: "Qué ventana es mejor depende de la pregunta. Las ventanas cortas muestran cada temporada, pero también más ruido. Las largas muestran el panorama general, pero esconden eras cortas o recientes, como el 2025 de McLaren. En el panel, la barra deslizante permite probar todas las ventanas de 1 a 10 años.",
+        s6_h_threshold: "El umbral de dominio",
+        s6_p4: "Mover la línea del 40% al 30% o al 50% cambia quién entra. Los equipos en rojo son los que entran o salen:",
+        thr_12: "12 equipos",
+        thr_10: "10 equipos",
+        thr_7: "7 equipos",
+        s6_p5: "Siete equipos superan los tres umbrales: Alfa Romeo, Ferrari, Lotus, McLaren, Mercedes, Red Bull y Williams. Para el resto, depende de dónde tracemos la línea. Con el 50%, se quedan fuera Benetton (40,3%), Tyrrell (43,4%) y Cooper (49,7%).",
+        s6_p6: "Cualquier corte es arbitrario en la frontera. Cooper, cuyo pico se quedó justo por debajo del 50%, quedaría fuera del gráfico y del análisis. Un umbral sirve para centrarse en los mejores, pero conviene recordar siempre que algunos equipos se acercaron mucho a ese nivel de éxito y no aparecen.",
+
+        s7_title: "Metodología, decisiones y limitaciones",
+        s7_intro: "Todas las cifras de este informe dependen de estas decisiones. Están todas en el notebook, junto al código que las aplica.",
+        m_source: "<strong>Fuente:</strong> F1DB versión v2026.20.0 (datos hasta el Gran Premio de Brasil de 2026), con licencia CC BY 4.0.",
+        m_metric: "<strong>Métrica: % de carreras ganadas por temporada</strong>, no puntos. El sistema de puntuación y el número de carreras por temporada han cambiado muchas veces, así que los puntos no son comparables entre épocas.",
+        m_indy: "<strong>Se excluyen las 500 Millas de Indianápolis (1950-1960).</strong> Puntuaban para el Campeonato del Mundo, pero eran una carrera estadounidense aparte, con otros coches y otros equipos. Mantenerlas rebajaría el dominio de los equipos de F1 (por ejemplo, Alfa Romeo en 1950: 6/6 = 100% en lugar de 6/7). Se filtraron por Gran Premio, no por circuito, para conservar los Grandes Premios de Estados Unidos de 2000-2007 disputados en Indianápolis. Así se pasa de 1.169 carreras a 1.158.",
+        m_shared: "<strong>Las victorias en coche compartido cuentan una vez.</strong> En tres carreras (1951, 1956, 1957), dos pilotos del mismo equipo compartieron el coche ganador y a los dos se les atribuye la victoria. Cada carrera cuenta como una victoria para el equipo: 1.158 victorias en total.",
+        m_names: "<strong>Los equipos se cuentan por el nombre oficial del constructor, no por fábrica.</strong> Por ejemplo, Toro Rosso y AlphaTauri se cuentan por separado, Lotus (1958-1994) y Lotus F1 (2012-2015) son equipos distintos, y «mercedes» abarca tanto el equipo oficial de los años 50 como el actual.",
+        m_average: "<strong>Media móvil centrada de tres años</strong>, para ver eras en lugar del ruido de un año a otro. Suaviza los picos (McLaren 1988: el 93,75% se queda en 58,3%) y es menos fiable en los extremos (1950 y 2026).",
+        m_threshold: "<strong>Dominante = un pico de al menos el 40%</strong> en la media móvil. Elegir los equipos con más victorias totales favorecía a los equipos longevos y escondía eras de dominio cortas, como la de Alfa Romeo. El umbral del 40% es una decisión de criterio, y es el mismo para motores y fábricas.",
+        m_2026: "<strong>La temporada 2026 está incompleta</strong> (20 carreras por ahora), así que sus valores son provisionales.",
+        m_engines: "<strong>Los motores se cuentan por su nombre oficial.</strong> La era reciente de Honda con Red Bull se reparte entre «honda» y «honda-rbpt» (Red Bull Powertrains, fabricado por Honda), así que parece más pequeña de lo que fue.",
+        m_factories: "<strong>Las fábricas se definen con la cronología de constructores de F1DB</strong>, asignadas por nombre y año y etiquetadas como «primer nombre → último nombre». «La misma fábrica» es una definición, no una verdad absoluta: el Tyrrell de 1971 y el Mercedes de 2015 compartían fábrica, pero no dueños, personas ni presupuestos.",
+
+        s8_title: "Datos y reproducibilidad",
+        s8_p1: "Todos los datos proceden de <a href=\"https://github.com/f1db/f1db\" target=\"_blank\" rel=\"noopener\">F1DB</a>, una base de datos abierta de la historia de la Fórmula 1, versión <strong>v2026.20.0</strong>, que cubre todas las carreras hasta el Gran Premio de Brasil de 2026. Se publica con licencia <a href=\"https://creativecommons.org/licenses/by/4.0/deed.es\" target=\"_blank\" rel=\"noopener\">CC BY 4.0</a>, que permite reutilizarlos citando la fuente.",
+        s8_p2: "El código está en GitHub, en <a href=\"https://github.com/AliR-lab/f1-analytics\" target=\"_blank\" rel=\"noopener\">AliR-lab/f1-analytics</a>. Todo el análisis está en un único notebook, <code>notebooks/01_dominant_teams.ipynb</code>. Para repetirlo:",
+        s8_step1: "Clona el repositorio e instala las dependencias con <a href=\"https://docs.astral.sh/uv/\" target=\"_blank\" rel=\"noopener\">uv</a>:",
+        s8_step2: "Descarga los archivos CSV de la <a href=\"https://github.com/f1db/f1db/releases/tag/v2026.20.0\" target=\"_blank\" rel=\"noopener\">versión v2026.20.0 de F1DB</a> y descomprímelos en <code>data/raw/f1db/</code>. La carpeta <code>data/</code> no está en el repositorio. El notebook usa tres archivos: <code>f1db-races-race-results.csv</code>, <code>f1db-races.csv</code> y <code>f1db-constructors-chronology.csv</code>.",
+        s8_step3: "Abre JupyterLab y ejecuta todas las celdas del notebook, de arriba abajo:",
+        s8_step4: "El notebook guarda los gráficos en <code>figures/</code> y genera el panel y este informe en <code>docs/</code>.",
+        s8_p3: "Con la misma versión deberías obtener exactamente las mismas cifras. Una versión más reciente añadirá carreras y cambiará los valores de 2026, que todavía son provisionales.",
+
+        footer_data: "Datos:",
+        footer_analysis: "Análisis completo",
+        footer_made_by: "Hecho por AliR-lab"
+      }
+    };
+
+    // Rellena translations.en con los textos tal como están escritos en el HTML.
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var key = el.dataset.i18n;
+      if (!(key in translations.en)) translations.en[key] = el.innerHTML;
+    });
+    document.querySelectorAll("[data-i18n-attr]").forEach(function (el) {
+      var parts = el.dataset.i18nAttr.split(":");
+      if (!(parts[1] in translations.en)) translations.en[parts[1]] = el.getAttribute(parts[0]);
+    });
+
+    var currentLang = "en";
+
+    // Si falta una traducción, usa el inglés en vez de dejar el hueco vacío.
+    function t(key) {
+      var text = translations[currentLang][key];
+      return text !== undefined ? text : translations.en[key];
+    }
+
+    // Idioma inicial: el guardado; si no, el primero del navegador que tengamos; si no, inglés.
+    // El dashboard también ofrece francés e italiano: este informe muestra entonces el inglés,
+    // pero no toca lo guardado, para que el dashboard siga en el idioma elegido.
+    function detectLanguage() {
+      var saved = null;
+      try { saved = localStorage.getItem("lang"); } catch (e) {}
+      if (translations[saved]) return saved;
+      if (saved === "fr" || saved === "it") return "en";
+
+      var browser = navigator.languages || [navigator.language || ""];
+      for (var i = 0; i < browser.length; i++) {
+        var code = String(browser[i]).slice(0, 2).toLowerCase();  // "es-ES" → "es"
+        if (translations[code]) return code;
+      }
+      return "en";
+    }
+
+    function applyTranslations() {
+      // Cambiar lang también decide qué tablas se ven (ver [data-only-lang] en el CSS).
+      document.documentElement.lang = currentLang;
+
+      document.querySelectorAll("[data-i18n]").forEach(function (el) {
+        el.innerHTML = t(el.dataset.i18n);
+      });
+
+      // data-i18n-attr="aria-label:theme_toggle" → atributo aria-label con la clave theme_toggle
+      document.querySelectorAll("[data-i18n-attr]").forEach(function (el) {
+        var parts = el.dataset.i18nAttr.split(":");
+        el.setAttribute(parts[0], t(parts[1]));
+      });
+
+      document.querySelectorAll(".lang-switch button").forEach(function (btn) {
+        btn.setAttribute("aria-pressed", btn.dataset.lang === currentLang ? "true" : "false");
+      });
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      try { localStorage.setItem("lang", lang); } catch (e) {}
+      applyTranslations();
+    }
+
+    document.querySelectorAll(".lang-switch button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setLanguage(btn.dataset.lang);
+      });
+    });
+
+    currentLang = detectLanguage();
+    applyTranslations();
+  </script>
+</body>
+</html>
