@@ -30,6 +30,12 @@
       --glass-highlight: rgba(255, 255, 255, 0.6);
       --shadow: rgba(30, 40, 80, 0.12);
       --accent: #d62839;
+      --accent-contrast: #ffffff;
+      --divider: rgba(0, 0, 0, 0.10);
+      /* Tarjeta Overall: cristal oscuro en los dos temas */
+      --overall-bg: rgba(32, 24, 42, 0.86);
+      --overall-text: #f5f5f7;
+      --overall-muted: #c9c6d3;
       /* Colores que se pasan a Plotly */
       --chart-text: #1d1d1f;
       --chart-grid: rgba(0, 0, 0, 0.08);
@@ -48,6 +54,12 @@
       --glass-highlight: rgba(255, 255, 255, 0.08);
       --shadow: rgba(0, 0, 0, 0.45);
       --accent: #ff5a6a;
+      /* El acento oscuro es claro: el texto encima va oscuro para que se lea */
+      --accent-contrast: #1a0f1f;
+      --divider: rgba(255, 255, 255, 0.14);
+      --overall-bg: rgba(8, 8, 16, 0.80);
+      --overall-text: #f5f5f7;
+      --overall-muted: #b8b5c4;
       --chart-text: #e6e6ec;
       --chart-grid: rgba(255, 255, 255, 0.10);
       color-scheme: dark;
@@ -85,7 +97,7 @@
 
     .container {
       width: 100%;
-      max-width: 960px;
+      max-width: 1500px;
       margin: 0 auto;
       padding: 0 16px;
     }
@@ -150,6 +162,39 @@
       gap: 24px;
     }
 
+    /* En pantallas estrechas los envoltorios no cuentan: las tarjetas quedan en una sola
+       columna y "order" manda Overall al final, después de los gráficos. */
+    .sidebar, .charts { display: contents; }
+    .card-overall { order: 1; }
+
+    /* ---------- Pantallas anchas: barra lateral + gráficos ---------- */
+    @media (min-width: 1100px) {
+      main {
+        display: grid;
+        grid-template-columns: 340px minmax(0, 1fr);
+        align-items: start;
+      }
+
+      .sidebar, .charts {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 24px;
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        /* Margen interior para que el scroll no recorte la sombra de las tarjetas */
+        padding: 4px 8px 16px;
+        margin: -4px -8px -16px;
+      }
+
+      .card-overall { order: 0; }
+    }
+
     .card { padding: 24px; }
 
     .card h2 {
@@ -166,6 +211,105 @@
     .chart { width: 100%; overflow: hidden; }
     .chart .plotly-graph-div { width: 100% !important; }
 
+    /* ---------- Textos ---------- */
+    /* Solo los párrafos directos, para no pisar los de .howto */
+    .prose > p { margin: 12px 0 0; }
+    .prose > p:first-of-type { margin-top: 0; }
+    .card h2 + .prose { margin-top: 12px; }
+
+    /* Conclusiones debajo de cada gráfico, separadas por una línea fina */
+    .notes {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .notes-label {
+      margin: 0 0 6px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .notes p:not(.notes-label) { margin: 0; }
+
+    /* Bloque "How to use it" de la introducción */
+    .howto {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .howto-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .howto-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .howto-list svg {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      color: var(--accent);
+    }
+
+    .howto-tip {
+      margin: 14px 0 0;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-style: italic;
+    }
+
+    /* Tarjeta Overall destacada: cristal oscuro con un toque del color de acento.
+       Redefine los colores de texto para que todo lo de dentro sea claro. */
+    .card-overall.glass {
+      --text: var(--overall-text);
+      --text-muted: var(--overall-muted);
+      color: var(--text);
+      background:
+        linear-gradient(140deg, color-mix(in srgb, var(--accent) 28%, transparent), transparent 65%),
+        var(--overall-bg);
+      border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.10),
+        0 10px 36px var(--shadow);
+    }
+
+    /* Botón-enlace destacado */
+    .btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 22px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-contrast);
+      font-weight: 600;
+      box-shadow: 0 4px 16px var(--shadow);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn:hover {
+      text-decoration: none;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--shadow);
+    }
+
+    .btn:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+
     /* ---------- Pie ---------- */
     footer {
       display: flex;
@@ -177,6 +321,17 @@
       font-size: 0.9rem;
       text-align: center;
     }
+
+    /* Ocupa toda la fila del pie, así los créditos quedan debajo */
+    .about {
+      flex-basis: 100%;
+      max-width: 720px;
+      margin: 0 auto 8px;
+      font-size: 0.8rem;
+      line-height: 1.55;
+    }
+
+    .about strong { color: var(--text); }
 
     /* ---------- Móvil ---------- */
     @media (max-width: 600px) {
@@ -204,11 +359,66 @@
     </header>
 
     <main>
+      <aside class="sidebar">
+      <section class="card glass prose">
+        <p>This page explores who dominated Formula 1, season by season, from the first World Championship in 1950 to today. Dominance is measured as the <strong>percentage of races won each season</strong>, so that different eras can be compared fairly, and it is seen from three angles: <strong>teams</strong> (each constructor as officially entered), <strong>engines</strong> (the manufacturer behind the winning car, often supplying several teams at once) and <strong>factories</strong> (teams grouped by lineage: a factory that changed name and owner over the years, like Tyrrell → BAR → Honda → Brawn → Mercedes, counts as one).</p>
+        <div class="howto">
+          <p class="notes-label">How to use it</p>
+          <ul class="howto-list">
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 7h16M4 17h16"/><circle cx="15" cy="7" r="2.5" fill="currentColor"/><circle cx="9" cy="17" r="2.5" fill="currentColor"/>
+              </svg>
+              <span><strong>Slider:</strong> smooth the lines from 1 to 10 years. Short windows show every season; long ones reveal the big eras.</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span><strong>Click a name in the legend:</strong> hide or show it.</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/>
+              </svg>
+              <span><strong>Double-click a name:</strong> isolate it. Double-click again to bring them all back.</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5M11 8v6M8 11h6"/>
+              </svg>
+              <span><strong>Drag over a chart:</strong> zoom into a period. Double-click to reset.</span>
+            </li>
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 3l14 7-6 2-2 7z"/>
+              </svg>
+              <span><strong>Hover a line:</strong> see the exact value.</span>
+            </li>
+          </ul>
+          <p class="howto-tip">Tip: move the slider slowly and watch the peaks melt.</p>
+        </div>
+      </section>
+
+      <section class="card glass card-overall">
+        <h2>Overall</h2>
+        <div class="prose">
+          <p>Dominance in F1 comes in waves: every era has eventually ended, and Ferrari is the only team that has returned to the top in very different periods. Team names alone hide part of the story, because the engine and the factory behind a car matter as much as the badge on it. And what we see depends on how we look: the smoothing window and the definition of a "team" both change the picture.</p>
+        </div>
+        <a class="btn" href="report.html">Read the full report →</a>
+      </section>
+      </aside>
+
+      <div class="charts">
       <section class="card glass">
         <h2>Teams</h2>
         <p class="question">Which constructors won the most in each era?</p>
         <div class="chart">
           {{TEAMS_CHART}}
+        </div>
+        <div class="notes">
+          <p class="notes-label">What it shows</p>
+          <p>Six eras stand out: Alfa Romeo, Ferrari and Mercedes in the 1950s; Cooper, Lotus and Tyrrell from the late 1950s to the mid-1970s; a balanced decade from 1975 to 1985 with no clear leader; McLaren and Williams taking turns from 1985 to 2000; Ferrari with Michael Schumacher in the 2000s; and Red Bull and Mercedes since 2010. The most crushing spell is <strong>Mercedes in 2014-2016</strong>, winning over 85% of races on a three-year average.</p>
         </div>
       </section>
 
@@ -218,6 +428,10 @@
         <div class="chart">
           {{ENGINES_CHART}}
         </div>
+        <div class="notes">
+          <p class="notes-label">What it shows</p>
+          <p>Engines tell a different story, because one engine can win with several teams at once. The <strong>Ford Cosworth</strong>, sold to almost any team, powered one of the longest eras of dominance in F1, from the late 1960s to the early 1980s, with close to 90% of wins at its peak. Renault had two great eras with different teams (Williams and Benetton in the 1990s, Red Bull in 2010-2013). And what looks like a change at the top in 2025-2026 is continuity: McLaren and Mercedes both race with <strong>Mercedes engines</strong>.</p>
+        </div>
       </section>
 
       <section class="card glass">
@@ -226,10 +440,16 @@
         <div class="chart">
           {{FACTORIES_CHART}}
         </div>
+        <div class="notes">
+          <p class="notes-label">What it shows</p>
+          <p>Grouping teams by lineage barely changes the eras, but it changes the stories. One factory, <strong>Tyrrell → Mercedes</strong>, owns two great eras about 40 years apart, with Brawn's 2009 title in between. And the name "mercedes" splits into the two different teams it really was: the 1950s works team and the current one.</p>
+        </div>
       </section>
+      </div>
     </main>
 
     <footer>
+      <p class="about"><strong>About the data.</strong> Data: <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB</a> release v2026.20.0, up to the 2026 Brazilian Grand Prix (CC BY 4.0). The 2026 season is incomplete, so its values are provisional. The Indianapolis 500 (1950-1960) is excluded: it counted for the championship but was a separate American race. Wins in shared cars count once per race. Even windows (2, 4, 6…) cannot be perfectly centred, and averages are less reliable at both ends of the timeline.</p>
       <span>Data: <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB (CC BY 4.0)</a></span>
       <span><a href="https://github.com/AliR-lab/f1-analytics/blob/main/notebooks/01_dominant_teams.ipynb" target="_blank" rel="noopener">Full analysis</a></span>
       <span>Made by AliR-lab</span>
@@ -313,6 +533,23 @@
 
     // "load" espera a que se hayan cargado todos los scripts, incluido Plotly.
     window.addEventListener("load", styleCharts);
+
+    // Reajusta cada gráfico cuando cambia el ancho de su tarjeta (ventana redimensionada
+    // o paso de una columna a dos). Plotly por sí solo solo escucha el "resize" de la ventana.
+    window.addEventListener("load", function () {
+      if (typeof Plotly === "undefined" || typeof ResizeObserver === "undefined") return;
+
+      var observer = new ResizeObserver(function (entries) {
+        entries.forEach(function (entry) {
+          var chart = entry.target.querySelector(".js-plotly-plot");
+          if (chart) Plotly.Plots.resize(chart);
+        });
+      });
+
+      document.querySelectorAll(".chart").forEach(function (box) {
+        observer.observe(box);
+      });
+    });
   </script>
 </body>
 </html>
