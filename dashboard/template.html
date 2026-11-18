@@ -39,6 +39,13 @@
       /* Colores que se pasan a Plotly */
       --chart-text: #1d1d1f;
       --chart-grid: rgba(0, 0, 0, 0.08);
+      /* Barra de la media móvil: canal mate, relleno plano y bola blanca tipo botón */
+      --groove-bg: rgba(0, 0, 0, 0.07);
+      --groove-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+      --ball-bg: #ffffff;
+      --ball-shade: inset 0 -2px 0 rgba(0, 0, 0, 0.16);
+      --ball-shadow: 0 2px 4px rgba(30, 40, 80, 0.25);
+      --focus-ring: rgba(214, 40, 57, 0.45);
       color-scheme: light;
     }
 
@@ -62,6 +69,12 @@
       --overall-muted: #b8b5c4;
       --chart-text: #e6e6ec;
       --chart-grid: rgba(255, 255, 255, 0.10);
+      --groove-bg: rgba(255, 255, 255, 0.08);
+      --groove-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+      --ball-bg: #f2f2f5;
+      --ball-shade: inset 0 -2px 0 rgba(0, 0, 0, 0.22);
+      --ball-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+      --focus-ring: rgba(255, 90, 106, 0.5);
       color-scheme: dark;
     }
 
@@ -342,6 +355,159 @@
     .chart { width: 100%; overflow: hidden; }
     .chart .plotly-graph-div { width: 100% !important; }
 
+    /* Aviso "gira el móvil": solo en móviles en vertical */
+    .rotate-tip {
+      display: none;
+      margin: 0 0 8px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-style: italic;
+    }
+
+    @media (max-width: 599px) and (orientation: portrait) and (pointer: coarse) {
+      .rotate-tip { display: block; }
+    }
+
+    /* Con el dedo no se hace zoom arrastrando (dragmode: false), así que ese punto no aplica */
+    @media (pointer: coarse) {
+      .howto-drag { display: none !important; }
+    }
+
+    /* ---------- Barra de la media móvil ---------- */
+    /* La barra que se ve son dos divs: el canal (.ma-track) y el relleno (.ma-fill), con la
+       bola (.ma-fill::after) en su extremo derecho. Encima va el <input> real, transparente:
+       es el que recibe el ratón, el dedo y el teclado.
+       --track-h: alto del canal; --pad: margen interior; --fill-h: alto del relleno y
+       diámetro de la bola; --hit: alto de la zona que se puede tocar. */
+    .ma-slider {
+      --track-h: 22px;
+      --pad: 3px;
+      --fill-h: calc(var(--track-h) - 2 * var(--pad));
+      --hit: 24px;
+      margin-top: 12px;
+    }
+
+    .ma-head {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .ma-head output {
+      color: var(--text);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ma-rail {
+      position: relative;
+      display: flex;
+      align-items: center;
+      height: var(--hit);
+      margin-top: 6px;
+    }
+
+    /* Canal: pastilla mate con una sombra interior ligera */
+    .ma-track {
+      width: 100%;
+      height: var(--track-h);
+      padding: var(--pad);
+      border-radius: 999px;
+      background: var(--groove-bg);
+      box-shadow: var(--groove-shadow);
+    }
+
+    /* Relleno plano del acento: en la posición 1 mide justo una bola y en la 10 llena
+       el interior del canal, así que la bola nunca sobresale. --fill (de 0 a 1) lo pone el JS. */
+    .ma-fill {
+      position: relative;
+      width: calc(var(--fill-h) + (100% - var(--fill-h)) * var(--fill, 0.2222));
+      height: 100%;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    /* Bola blanca tipo botón en el extremo del relleno: borde fino del acento, una media luna
+       más oscura abajo (sombra interior sin difuminar) y una sombra suave debajo */
+    .ma-fill::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: var(--fill-h);
+      height: var(--fill-h);
+      border-radius: 50%;
+      background: var(--ball-bg);
+      box-shadow: inset 0 0 0 1.5px var(--accent), var(--ball-shade), var(--ball-shadow);
+    }
+
+    /* El <input> real, invisible y encima. Se sale del canal por los lados lo justo para que
+       el centro de su bola (invisible) caiga siempre sobre el extremo redondeado del relleno:
+       la bola nativa va de hit/2 a ancho - hit/2; el extremo visible, de pad + fill-h/2. */
+    .ma-slider input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      position: absolute;
+      z-index: 1;
+      top: 0;
+      left: calc(var(--pad) + var(--fill-h) / 2 - var(--hit) / 2);
+      width: calc(100% + var(--hit) - 2 * var(--pad) - var(--fill-h));
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    /* La bola invisible solo da el tamaño de la zona que se agarra */
+    .ma-slider input[type="range"]::-webkit-slider-runnable-track { height: var(--hit); }
+
+    .ma-slider input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: var(--hit);
+      height: var(--hit);
+    }
+
+    .ma-slider input[type="range"]::-moz-range-track { height: var(--hit); }
+
+    .ma-slider input[type="range"]::-moz-range-thumb {
+      width: var(--hit);
+      height: var(--hit);
+      border: none;
+    }
+
+    /* Como el input es invisible, el foco se dibuja en la bola. Discreto y solo con teclado:
+       un anillo fino y semitransparente que cabe dentro del margen interior del canal. */
+    .ma-slider input[type="range"]:focus-visible + .ma-track .ma-fill::after {
+      outline: 1.5px solid var(--focus-ring);
+      outline-offset: 0;
+    }
+
+    /* Marcas del 1 al 10: cada número centrado bajo el extremo del relleno en esa posición */
+    .ma-ticks {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 calc(var(--pad) + var(--fill-h) / 2);
+      margin-top: 2px;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ma-ticks span {
+      display: flex;
+      justify-content: center;
+      width: 0;
+    }
+
+    /* Con el dedo: canal algo más grueso y 44 px de zona táctil */
+    @media (pointer: coarse) {
+      .ma-slider {
+        --track-h: 26px;
+        --hit: 44px;
+      }
+    }
+
     /* ---------- Textos ---------- */
     /* Solo los párrafos directos, para no pisar los de .howto */
     .prose > p { margin: 12px 0 0; }
@@ -500,8 +666,7 @@
 
     /* Quien tiene desactivadas las animaciones en su sistema ve los cambios al instante */
     @media (prefers-reduced-motion: reduce) {
-      .header-bar, .header-bar *, .header-bar::before, .fab-report { transition: none !important; }
-    }
+      .header-bar, .header-bar *, .header-bar::before, .fab-report { transition: none !important; }    }
   </style>
 </head>
 <body>
@@ -563,7 +728,7 @@
               </svg>
               <span data-i18n="howto_dblclick"><strong>Double-click a name:</strong> isolate it. Double-click again to bring them all back.</span>
             </li>
-            <li>
+            <li class="howto-drag">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5M11 8v6M8 11h6"/>
               </svg>
@@ -593,8 +758,17 @@
       <section class="card glass">
         <h2 data-i18n="teams_title">Teams</h2>
         <p class="question" data-i18n="teams_question">Which constructors won the most in each era?</p>
+        <p class="rotate-tip" data-i18n="rotate_tip">Tip: turn your phone sideways for a wider view.</p>
         <div class="chart" data-legend="legend_team">
           {{TEAMS_CHART}}
+        </div>
+        <div class="ma-slider">
+          <div class="ma-head"><label for="ma-teams" data-i18n="slider_prefix">Moving average: </label><output for="ma-teams" aria-hidden="true">3 yr</output></div>
+          <div class="ma-rail">
+            <input type="range" id="ma-teams" min="1" max="10" step="1" value="3" autocomplete="off" aria-valuetext="3 years">
+            <div class="ma-track" aria-hidden="true"><div class="ma-fill"></div></div>
+          </div>
+          <div class="ma-ticks" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
         </div>
         <div class="notes">
           <p class="notes-label" data-i18n="notes_label">What it shows</p>
@@ -605,8 +779,17 @@
       <section class="card glass">
         <h2 data-i18n="engines_title">Engines</h2>
         <p class="question" data-i18n="engines_question">Which engine manufacturers powered the winning cars?</p>
+        <p class="rotate-tip" data-i18n="rotate_tip">Tip: turn your phone sideways for a wider view.</p>
         <div class="chart" data-legend="legend_engine">
           {{ENGINES_CHART}}
+        </div>
+        <div class="ma-slider">
+          <div class="ma-head"><label for="ma-engines" data-i18n="slider_prefix">Moving average: </label><output for="ma-engines" aria-hidden="true">3 yr</output></div>
+          <div class="ma-rail">
+            <input type="range" id="ma-engines" min="1" max="10" step="1" value="3" autocomplete="off" aria-valuetext="3 years">
+            <div class="ma-track" aria-hidden="true"><div class="ma-fill"></div></div>
+          </div>
+          <div class="ma-ticks" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
         </div>
         <div class="notes">
           <p class="notes-label" data-i18n="notes_label">What it shows</p>
@@ -617,8 +800,17 @@
       <section class="card glass">
         <h2 data-i18n="factories_title">Factories</h2>
         <p class="question" data-i18n="factories_question">Which teams dominate when we group them by the factory they come from?</p>
+        <p class="rotate-tip" data-i18n="rotate_tip">Tip: turn your phone sideways for a wider view.</p>
         <div class="chart" data-legend="legend_factory">
           {{FACTORIES_CHART}}
+        </div>
+        <div class="ma-slider">
+          <div class="ma-head"><label for="ma-factories" data-i18n="slider_prefix">Moving average: </label><output for="ma-factories" aria-hidden="true">3 yr</output></div>
+          <div class="ma-rail">
+            <input type="range" id="ma-factories" min="1" max="10" step="1" value="3" autocomplete="off" aria-valuetext="3 years">
+            <div class="ma-track" aria-hidden="true"><div class="ma-fill"></div></div>
+          </div>
+          <div class="ma-ticks" aria-hidden="true"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
         </div>
         <div class="notes">
           <p class="notes-label" data-i18n="notes_label">What it shows</p>
@@ -650,9 +842,9 @@
 
       var text = cssVar("--chart-text");
       var grid = cssVar("--chart-grid");
-      var muted = cssVar("--text-muted");
-      var accent = cssVar("--accent");
-      var isMobile = window.innerWidth < 600;
+      // Mismo corte que el CSS: móvil por debajo de 600 px; táctil si se usa el dedo.
+      var isMobile = window.matchMedia("(max-width: 599px)").matches;
+      var isTouch = window.matchMedia("(pointer: coarse)").matches;
 
       document.querySelectorAll(".js-plotly-plot").forEach(function (chart) {
         var layout = chart.layout || {};
@@ -660,9 +852,15 @@
           "paper_bgcolor": "rgba(0,0,0,0)",
           "plot_bgcolor": "rgba(0,0,0,0)",
           "font.color": text,
+          // Móvil: letra algo más pequeña y gráfico más alto. En escritorio se ponen
+          // los valores por defecto de Plotly, para deshacer el cambio al ensanchar la ventana.
+          "font.size": isMobile ? 11 : 12,
+          "height": isMobile ? 420 : 450,
+          // Sin zoom por arrastre en pantallas pequeñas o táctiles: arrastrar el dedo desplaza la página.
+          "dragmode": isMobile || isTouch ? false : "zoom",
           // La tarjeta ya tiene su título, así que se quita el del gráfico.
           "title.text": "",
-          // Leyenda horizontal encima del área del gráfico; la barra deslizante queda debajo.
+          // Leyenda horizontal encima del área del gráfico.
           "legend.orientation": "h",
           "legend.x": 0,
           "legend.xanchor": "left",
@@ -670,11 +868,11 @@
           "legend.yanchor": "bottom",
           "legend.bgcolor": "rgba(0,0,0,0)",
           "legend.font.color": text,
-          // La leyenda y la barra amplían estos márgenes solas si necesitan más sitio.
+          // La leyenda amplía estos márgenes sola si necesita más sitio.
           "margin.t": 20,
-          "margin.b": 40,
-          "margin.l": isMobile ? 40 : 60,
-          "margin.r": isMobile ? 10 : 20,
+          "margin.b": isMobile ? 30 : 40,
+          "margin.l": isMobile ? 36 : 60,
+          "margin.r": isMobile ? 8 : 20,
           "margin.autoexpand": true
         };
 
@@ -686,21 +884,24 @@
             update[key + ".linecolor"] = grid;
             update[key + ".color"] = text;
           }
+          // Móvil: una marca cada 20 años (1960, 1980...); si no, Plotly elige las marcas.
+          if (/^xaxis\d*$/.test(key)) {
+            update[key + ".tickmode"] = isMobile ? "linear" : "auto";
+            update[key + ".tick0"] = isMobile ? 1960 : null;
+            update[key + ".dtick"] = isMobile ? 20 : null;
+          }
         });
-
-        // Barra deslizante de la media móvil (layout.sliders creado en Python), si existe.
-        if (layout.sliders && layout.sliders.length) {
-          update["sliders[0].font.color"] = text;
-          update["sliders[0].currentvalue.font.color"] = text;
-          update["sliders[0].tickcolor"] = text;
-          update["sliders[0].bgcolor"] = grid;
-          update["sliders[0].bordercolor"] = muted;
-          update["sliders[0].activebgcolor"] = accent;
-        }
 
         Plotly.relayout(chart, update);
       });
     }
+
+    // Repite los ajustes al cruzar los 600 px (girar el móvil, cambiar el ancho de la ventana)
+    // o al cambiar entre ratón y dedo. "change" solo salta al cruzar el límite, no en cada píxel.
+    ["(max-width: 599px)", "(pointer: coarse)"].forEach(function (query) {
+      var mq = window.matchMedia(query);
+      if (mq.addEventListener) mq.addEventListener("change", styleCharts);
+    });
 
     function setTheme(theme) {
       document.documentElement.dataset.theme = theme;
@@ -730,6 +931,45 @@
 
       document.querySelectorAll(".chart").forEach(function (box) {
         observer.observe(box);
+      });
+    });
+  </script>
+
+  <script>
+    // ---------- Barra de la media móvil ----------
+    // Cada barra mueve el gráfico de su tarjeta al frame de esa ventana ("1" a "10", creados
+    // en Python). Los frames solo traen x e y, así que los equipos ocultos siguen ocultos.
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Texto visible ("3 yr"), texto para lectores de pantalla ("3 years") y relleno del canal.
+    // Usa yearsLabel() del bloque de traducciones; se llama también desde applyTranslations().
+    function updateSliderText(slider) {
+      var n = Number(slider.value);
+      var min = Number(slider.min);
+      var max = Number(slider.max);
+      var box = slider.closest(".ma-slider");
+      box.querySelector("output").textContent = yearsLabel(n);
+      slider.setAttribute("aria-valuetext", yearsLabel(n, true));
+      // En el contenedor, no en el input: así lo hereda .ma-fill, que es hermano del input.
+      box.style.setProperty("--fill", (n - min) / (max - min));
+    }
+
+    document.querySelectorAll(".ma-slider input").forEach(function (slider) {
+      // "input" salta mientras se arrastra y con cada flecha del teclado.
+      slider.addEventListener("input", function () {
+        updateSliderText(slider);
+        if (typeof Plotly === "undefined") return;
+
+        var chart = slider.closest(".card").querySelector(".js-plotly-plot");
+        if (!chart) return;
+
+        var duration = reduceMotion ? 0 : 400;
+        // "immediate" corta la animación anterior: arrastrar deprisa no deja animaciones en cola.
+        Plotly.animate(chart, [slider.value], {
+          mode: "immediate",
+          frame: { duration: duration, redraw: false },
+          transition: { duration: duration, easing: "cubic-in-out" }
+        });
       });
     });
   </script>
@@ -778,7 +1018,11 @@
         legend_factory: "Factory",
         slider_prefix: "Moving average: ",
         years_one: "{n} yr",
-        years_other: "{n} yr"
+        years_other: "{n} yr",
+        // Forma completa para lectores de pantalla (aria-valuetext de la barra)
+        years_long_one: "{n} year",
+        years_long_other: "{n} years",
+        rotate_tip: "Tip: turn your phone sideways for a wider view."
       },
 
       es: {
@@ -817,7 +1061,10 @@
         legend_factory: "Fábrica",
         slider_prefix: "Media móvil: ",
         years_one: "{n} año",
-        years_other: "{n} años"
+        years_other: "{n} años",
+        years_long_one: "{n} año",
+        years_long_other: "{n} años",
+        rotate_tip: "Truco: gira el móvil para ver el gráfico más ancho."
       },
 
       // En francés va un espacio irrompible (&nbsp; o  ) antes de : ; ? y %
@@ -857,7 +1104,10 @@
         legend_factory: "Usine",
         slider_prefix: "Moyenne mobile : ",
         years_one: "{n} an",
-        years_other: "{n} ans"
+        years_other: "{n} ans",
+        years_long_one: "{n} an",
+        years_long_other: "{n} ans",
+        rotate_tip: "Astuce&nbsp;: tournez votre téléphone pour un affichage plus large."
       },
 
       it: {
@@ -896,7 +1146,10 @@
         legend_factory: "Fabbrica",
         slider_prefix: "Media mobile: ",
         years_one: "{n} anno",
-        years_other: "{n} anni"
+        years_other: "{n} anni",
+        years_long_one: "{n} anno",
+        years_long_other: "{n} anni",
+        rotate_tip: "Consiglio: ruota il telefono per una vista più ampia."
       }
     };
 
@@ -907,8 +1160,10 @@
     }
 
     // "1 año" / "2 años": elige singular o plural según el número de años.
-    function yearsLabel(n) {
-      return t(n === 1 ? "years_one" : "years_other").replace("{n}", n);
+    // Con long = true usa la forma completa ("3 years" en vez de "3 yr"), para lectores de pantalla.
+    function yearsLabel(n, long) {
+      var prefix = long ? "years_long_" : "years_";
+      return t(prefix + (n === 1 ? "one" : "other")).replace("{n}", n);
     }
 
     // Idioma inicial: el guardado; si no, el primero del navegador que tengamos; si no, inglés.
@@ -942,17 +1197,19 @@
       document.querySelectorAll(".lang-switch button").forEach(function (btn) {
         btn.setAttribute("aria-pressed", btn.dataset.lang === currentLang ? "true" : "false");
       });
+
+      // Valor de las barras de la media móvil ("3 años") y su texto para lectores de pantalla
+      document.querySelectorAll(".ma-slider input").forEach(updateSliderText);
     }
 
     // Cambia solo los textos de los gráficos. relayout toca el layout, no los datos,
-    // así que se conservan las líneas ocultas en la leyenda y la posición de la barra.
+    // así que se conservan las líneas ocultas en la leyenda.
     function translateCharts() {
       if (typeof Plotly === "undefined") return;
 
       document.querySelectorAll(".js-plotly-plot").forEach(function (chart) {
-        var layout = chart.layout || {};
         var update = {
-          // Sin título en el eje X: chocaba con la barra deslizante y los años se explican solos.
+          // Sin título en el eje X: los años se explican solos.
           "xaxis.title.text": "",
           "yaxis.title.text": t("axis_won")
         };
@@ -960,14 +1217,6 @@
         var box = chart.closest(".chart");
         var legendKey = box && box.dataset.legend;
         if (legendKey) update["legend.title.text"] = t(legendKey);
-
-        if (layout.sliders && layout.sliders.length) {
-          update["sliders[0].currentvalue.prefix"] = t("slider_prefix");
-          // parseInt lee el número del principio de la etiqueta en cualquier idioma ("3 yr", "3 años"...)
-          layout.sliders[0].steps.forEach(function (step, i) {
-            update["sliders[0].steps[" + i + "].label"] = yearsLabel(parseInt(step.label, 10));
-          });
-        }
 
         Plotly.relayout(chart, update);
       });
