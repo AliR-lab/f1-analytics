@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>F1 Dominance</title>
-  <meta name="description" content="Who ruled each era of Formula 1, 1950-2026">
+  <title data-i18n="title">F1 Dominance</title>
+  <meta name="description" content="Who ruled each era of Formula 1, 1950-2026" data-i18n-attr="content:subtitle">
 
   <script>
     // Elige el tema antes de pintar la página para evitar un parpadeo de color.
@@ -115,12 +115,23 @@
     }
 
     /* ---------- Cabecera ---------- */
+    /* flex-wrap: en pantallas estrechas los controles bajan debajo del título */
     header {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
       padding: 40px 0 24px;
+    }
+
+    .header-text { flex: 1 1 280px; }
+
+    .header-controls {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     h1 {
@@ -154,6 +165,35 @@
     .icon-sun { display: none; }
     :root[data-theme="dark"] .icon-sun { display: block; }
     :root[data-theme="dark"] .icon-moon { display: none; }
+
+    /* ---------- Selector de idioma ---------- */
+    .lang-switch {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      border-radius: 999px;
+    }
+
+    .lang-switch button {
+      padding: 6px;
+      border: 0;
+      border-radius: 8px;
+      background: none;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .lang-switch button:hover { color: var(--text); }
+    .lang-switch button[aria-pressed="true"] { color: var(--accent); }
+    .lang-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    .lang-sep { color: var(--text-muted); opacity: 0.6; }
 
     /* ---------- Tarjetas ---------- */
     main {
@@ -343,11 +383,21 @@
 <body>
   <div class="container">
     <header>
-      <div>
-        <h1>F1 Dominance</h1>
-        <p class="subtitle">Who ruled each era of Formula 1, 1950-2026</p>
+      <div class="header-text">
+        <h1 data-i18n="title">F1 Dominance</h1>
+        <p class="subtitle" data-i18n="subtitle">Who ruled each era of Formula 1, 1950-2026</p>
       </div>
-      <button class="theme-toggle glass" id="theme-toggle" type="button" aria-label="Toggle dark mode">
+      <div class="header-controls">
+      <div class="lang-switch glass" role="group" aria-label="Language" data-i18n-attr="aria-label:language">
+        <button type="button" data-lang="en" lang="en" title="English" aria-label="English">EN</button>
+        <span class="lang-sep" aria-hidden="true">·</span>
+        <button type="button" data-lang="es" lang="es" title="Español" aria-label="Español">ES</button>
+        <span class="lang-sep" aria-hidden="true">·</span>
+        <button type="button" data-lang="fr" lang="fr" title="Français" aria-label="Français">FR</button>
+        <span class="lang-sep" aria-hidden="true">·</span>
+        <button type="button" data-lang="it" lang="it" title="Italiano" aria-label="Italiano">IT</button>
+      </div>
+      <button class="theme-toggle glass" id="theme-toggle" type="button" aria-label="Toggle dark mode" data-i18n-attr="aria-label:theme_toggle">
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
         </svg>
@@ -356,103 +406,104 @@
           <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
         </svg>
       </button>
+      </div>
     </header>
 
     <main>
       <aside class="sidebar">
       <section class="card glass prose">
-        <p>This page explores who dominated Formula 1, season by season, from the first World Championship in 1950 to today. Dominance is measured as the <strong>percentage of races won each season</strong>, so that different eras can be compared fairly, and it is seen from three angles: <strong>teams</strong> (each constructor as officially entered), <strong>engines</strong> (the manufacturer behind the winning car, often supplying several teams at once) and <strong>factories</strong> (teams grouped by lineage: a factory that changed name and owner over the years, like Tyrrell → BAR → Honda → Brawn → Mercedes, counts as one).</p>
+        <p data-i18n="intro">This page explores who dominated Formula 1, season by season, from the first World Championship in 1950 to today. Dominance is measured as the <strong>percentage of races won each season</strong>, so that different eras can be compared fairly, and it is seen from three angles: <strong>teams</strong> (each constructor as officially entered), <strong>engines</strong> (the manufacturer behind the winning car, often supplying several teams at once) and <strong>factories</strong> (teams grouped by lineage: a factory that changed name and owner over the years, like Tyrrell → BAR → Honda → Brawn → Mercedes, counts as one).</p>
         <div class="howto">
-          <p class="notes-label">How to use it</p>
+          <p class="notes-label" data-i18n="howto_label">How to use it</p>
           <ul class="howto-list">
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                 <path d="M4 7h16M4 17h16"/><circle cx="15" cy="7" r="2.5" fill="currentColor"/><circle cx="9" cy="17" r="2.5" fill="currentColor"/>
               </svg>
-              <span><strong>Slider:</strong> smooth the lines from 1 to 10 years. Short windows show every season; long ones reveal the big eras.</span>
+              <span data-i18n="howto_slider"><strong>Slider:</strong> smooth the lines from 1 to 10 years. Short windows show every season; long ones reveal the big eras.</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
               </svg>
-              <span><strong>Click a name in the legend:</strong> hide or show it.</span>
+              <span data-i18n="howto_click"><strong>Click a name in the legend:</strong> hide or show it.</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/>
               </svg>
-              <span><strong>Double-click a name:</strong> isolate it. Double-click again to bring them all back.</span>
+              <span data-i18n="howto_dblclick"><strong>Double-click a name:</strong> isolate it. Double-click again to bring them all back.</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5M11 8v6M8 11h6"/>
               </svg>
-              <span><strong>Drag over a chart:</strong> zoom into a period. Double-click to reset.</span>
+              <span data-i18n="howto_zoom"><strong>Drag over a chart:</strong> zoom into a period. Double-click to reset.</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
                 <path d="M5 3l14 7-6 2-2 7z"/>
               </svg>
-              <span><strong>Hover a line:</strong> see the exact value.</span>
+              <span data-i18n="howto_hover"><strong>Hover a line:</strong> see the exact value.</span>
             </li>
           </ul>
-          <p class="howto-tip">Tip: move the slider slowly and watch the peaks melt.</p>
+          <p class="howto-tip" data-i18n="howto_tip">Tip: move the slider slowly and watch the peaks melt.</p>
         </div>
       </section>
 
       <section class="card glass card-overall">
-        <h2>Overall</h2>
+        <h2 data-i18n="overall_title">Overall</h2>
         <div class="prose">
-          <p>Dominance in F1 comes in waves: every era has eventually ended, and Ferrari is the only team that has returned to the top in very different periods. Team names alone hide part of the story, because the engine and the factory behind a car matter as much as the badge on it. And what we see depends on how we look: the smoothing window and the definition of a "team" both change the picture.</p>
+          <p data-i18n="overall_text">Dominance in F1 comes in waves: every era has eventually ended, and Ferrari is the only team that has returned to the top in very different periods. Team names alone hide part of the story, because the engine and the factory behind a car matter as much as the badge on it. And what we see depends on how we look: the smoothing window and the definition of a "team" both change the picture.</p>
         </div>
-        <a class="btn" href="report.html">Read the full report →</a>
+        <a class="btn" href="report.html" data-i18n="overall_button">Read the full report →</a>
       </section>
       </aside>
 
       <div class="charts">
       <section class="card glass">
-        <h2>Teams</h2>
-        <p class="question">Which constructors won the most in each era?</p>
-        <div class="chart">
+        <h2 data-i18n="teams_title">Teams</h2>
+        <p class="question" data-i18n="teams_question">Which constructors won the most in each era?</p>
+        <div class="chart" data-legend="legend_team">
           {{TEAMS_CHART}}
         </div>
         <div class="notes">
-          <p class="notes-label">What it shows</p>
-          <p>Six eras stand out: Alfa Romeo, Ferrari and Mercedes in the 1950s; Cooper, Lotus and Tyrrell from the late 1950s to the mid-1970s; a balanced decade from 1975 to 1985 with no clear leader; McLaren and Williams taking turns from 1985 to 2000; Ferrari with Michael Schumacher in the 2000s; and Red Bull and Mercedes since 2010. The most crushing spell is <strong>Mercedes in 2014-2016</strong>, winning over 85% of races on a three-year average.</p>
+          <p class="notes-label" data-i18n="notes_label">What it shows</p>
+          <p data-i18n="teams_notes">Six eras stand out: Alfa Romeo, Ferrari and Mercedes in the 1950s; Cooper, Lotus and Tyrrell from the late 1950s to the mid-1970s; a balanced decade from 1975 to 1985 with no clear leader; McLaren and Williams taking turns from 1985 to 2000; Ferrari with Michael Schumacher in the 2000s; and Red Bull and Mercedes since 2010. The most crushing spell is <strong>Mercedes in 2014-2016</strong>, winning over 85% of races on a three-year average.</p>
         </div>
       </section>
 
       <section class="card glass">
-        <h2>Engines</h2>
-        <p class="question">Which engine manufacturers powered the winning cars?</p>
-        <div class="chart">
+        <h2 data-i18n="engines_title">Engines</h2>
+        <p class="question" data-i18n="engines_question">Which engine manufacturers powered the winning cars?</p>
+        <div class="chart" data-legend="legend_engine">
           {{ENGINES_CHART}}
         </div>
         <div class="notes">
-          <p class="notes-label">What it shows</p>
-          <p>Engines tell a different story, because one engine can win with several teams at once. The <strong>Ford Cosworth</strong>, sold to almost any team, powered one of the longest eras of dominance in F1, from the late 1960s to the early 1980s, with close to 90% of wins at its peak. Renault had two great eras with different teams (Williams and Benetton in the 1990s, Red Bull in 2010-2013). And what looks like a change at the top in 2025-2026 is continuity: McLaren and Mercedes both race with <strong>Mercedes engines</strong>.</p>
+          <p class="notes-label" data-i18n="notes_label">What it shows</p>
+          <p data-i18n="engines_notes">Engines tell a different story, because one engine can win with several teams at once. The <strong>Ford Cosworth</strong>, sold to almost any team, powered one of the longest eras of dominance in F1, from the late 1960s to the early 1980s, with close to 90% of wins at its peak. Renault had two great eras with different teams (Williams and Benetton in the 1990s, Red Bull in 2010-2013). And what looks like a change at the top in 2025-2026 is continuity: McLaren and Mercedes both race with <strong>Mercedes engines</strong>.</p>
         </div>
       </section>
 
       <section class="card glass">
-        <h2>Factories</h2>
-        <p class="question">Which teams dominate when we group them by the factory they come from?</p>
-        <div class="chart">
+        <h2 data-i18n="factories_title">Factories</h2>
+        <p class="question" data-i18n="factories_question">Which teams dominate when we group them by the factory they come from?</p>
+        <div class="chart" data-legend="legend_factory">
           {{FACTORIES_CHART}}
         </div>
         <div class="notes">
-          <p class="notes-label">What it shows</p>
-          <p>Grouping teams by lineage barely changes the eras, but it changes the stories. One factory, <strong>Tyrrell → Mercedes</strong>, owns two great eras about 40 years apart, with Brawn's 2009 title in between. And the name "mercedes" splits into the two different teams it really was: the 1950s works team and the current one.</p>
+          <p class="notes-label" data-i18n="notes_label">What it shows</p>
+          <p data-i18n="factories_notes">Grouping teams by lineage barely changes the eras, but it changes the stories. One factory, <strong>Tyrrell → Mercedes</strong>, owns two great eras about 40 years apart, with Brawn's 2009 title in between. And the name "mercedes" splits into the two different teams it really was: the 1950s works team and the current one.</p>
         </div>
       </section>
       </div>
     </main>
 
     <footer>
-      <p class="about"><strong>About the data.</strong> Data: <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB</a> release v2026.20.0, up to the 2026 Brazilian Grand Prix (CC BY 4.0). The 2026 season is incomplete, so its values are provisional. The Indianapolis 500 (1950-1960) is excluded: it counted for the championship but was a separate American race. Wins in shared cars count once per race. Even windows (2, 4, 6…) cannot be perfectly centred, and averages are less reliable at both ends of the timeline.</p>
-      <span>Data: <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB (CC BY 4.0)</a></span>
-      <span><a href="https://github.com/AliR-lab/f1-analytics/blob/main/notebooks/01_dominant_teams.ipynb" target="_blank" rel="noopener">Full analysis</a></span>
-      <span>Made by AliR-lab</span>
+      <p class="about" data-i18n="about"><strong>About the data.</strong> Data: <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB</a> release v2026.20.0, up to the 2026 Brazilian Grand Prix (CC BY 4.0). The 2026 season is incomplete, so its values are provisional. The Indianapolis 500 (1950-1960) is excluded: it counted for the championship but was a separate American race. Wins in shared cars count once per race. Even windows (2, 4, 6…) cannot be perfectly centred, and averages are less reliable at both ends of the timeline.</p>
+      <span><span data-i18n="footer_data">Data:</span> <a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB (CC BY 4.0)</a></span>
+      <span><a href="https://github.com/AliR-lab/f1-analytics/blob/main/notebooks/01_dominant_teams.ipynb" target="_blank" rel="noopener" data-i18n="footer_analysis">Full analysis</a></span>
+      <span data-i18n="footer_made_by">Made by AliR-lab</span>
     </footer>
   </div>
 
@@ -550,6 +601,267 @@
         observer.observe(box);
       });
     });
+  </script>
+
+  <script>
+    // ---------- Traducciones ----------
+    // Cada clave corresponde a un data-i18n (o data-i18n-attr) del HTML.
+    // Los textos se insertan con innerHTML para conservar <strong> y enlaces.
+    var F1DB_LINK = '<a href="https://github.com/f1db/f1db" target="_blank" rel="noopener">F1DB</a>';
+
+    var translations = {
+      en: {
+        title: "F1 Dominance",
+        subtitle: "Who ruled each era of Formula 1, 1950-2026",
+        language: "Language",
+        theme_toggle: "Toggle dark mode",
+        intro: "This page explores who dominated Formula 1, season by season, from the first World Championship in 1950 to today. Dominance is measured as the <strong>percentage of races won each season</strong>, so that different eras can be compared fairly, and it is seen from three angles: <strong>teams</strong> (each constructor as officially entered), <strong>engines</strong> (the manufacturer behind the winning car, often supplying several teams at once) and <strong>factories</strong> (teams grouped by lineage: a factory that changed name and owner over the years, like Tyrrell → BAR → Honda → Brawn → Mercedes, counts as one).",
+        howto_label: "How to use it",
+        howto_slider: "<strong>Slider:</strong> smooth the lines from 1 to 10 years. Short windows show every season; long ones reveal the big eras.",
+        howto_click: "<strong>Click a name in the legend:</strong> hide or show it.",
+        howto_dblclick: "<strong>Double-click a name:</strong> isolate it. Double-click again to bring them all back.",
+        howto_zoom: "<strong>Drag over a chart:</strong> zoom into a period. Double-click to reset.",
+        howto_hover: "<strong>Hover a line:</strong> see the exact value.",
+        howto_tip: "Tip: move the slider slowly and watch the peaks melt.",
+        overall_title: "Overall",
+        overall_text: "Dominance in F1 comes in waves: every era has eventually ended, and Ferrari is the only team that has returned to the top in very different periods. Team names alone hide part of the story, because the engine and the factory behind a car matter as much as the badge on it. And what we see depends on how we look: the smoothing window and the definition of a \"team\" both change the picture.",
+        overall_button: "Read the full report →",
+        notes_label: "What it shows",
+        teams_title: "Teams",
+        teams_question: "Which constructors won the most in each era?",
+        teams_notes: "Six eras stand out: Alfa Romeo, Ferrari and Mercedes in the 1950s; Cooper, Lotus and Tyrrell from the late 1950s to the mid-1970s; a balanced decade from 1975 to 1985 with no clear leader; McLaren and Williams taking turns from 1985 to 2000; Ferrari with Michael Schumacher in the 2000s; and Red Bull and Mercedes since 2010. The most crushing spell is <strong>Mercedes in 2014-2016</strong>, winning over 85% of races on a three-year average.",
+        engines_title: "Engines",
+        engines_question: "Which engine manufacturers powered the winning cars?",
+        engines_notes: "Engines tell a different story, because one engine can win with several teams at once. The <strong>Ford Cosworth</strong>, sold to almost any team, powered one of the longest eras of dominance in F1, from the late 1960s to the early 1980s, with close to 90% of wins at its peak. Renault had two great eras with different teams (Williams and Benetton in the 1990s, Red Bull in 2010-2013). And what looks like a change at the top in 2025-2026 is continuity: McLaren and Mercedes both race with <strong>Mercedes engines</strong>.",
+        factories_title: "Factories",
+        factories_question: "Which teams dominate when we group them by the factory they come from?",
+        factories_notes: "Grouping teams by lineage barely changes the eras, but it changes the stories. One factory, <strong>Tyrrell → Mercedes</strong>, owns two great eras about 40 years apart, with Brawn's 2009 title in between. And the name \"mercedes\" splits into the two different teams it really was: the 1950s works team and the current one.",
+        about: "<strong>About the data.</strong> Data: " + F1DB_LINK + " release v2026.20.0, up to the 2026 Brazilian Grand Prix (CC BY 4.0). The 2026 season is incomplete, so its values are provisional. The Indianapolis 500 (1950-1960) is excluded: it counted for the championship but was a separate American race. Wins in shared cars count once per race. Even windows (2, 4, 6…) cannot be perfectly centred, and averages are less reliable at both ends of the timeline.",
+        footer_data: "Data:",
+        footer_analysis: "Full analysis",
+        footer_made_by: "Made by AliR-lab",
+        // Textos de los gráficos (se aplican con Plotly.relayout)
+        axis_season: "Season",
+        axis_won: "% of races won",
+        legend_team: "Team",
+        legend_engine: "Engine",
+        legend_factory: "Factory",
+        slider_prefix: "Moving average: ",
+        years_one: "{n} yr",
+        years_other: "{n} yr"
+      },
+
+      es: {
+        title: "Dominio en la F1",
+        subtitle: "Quién mandó en cada era de la Fórmula 1, 1950-2026",
+        language: "Idioma",
+        theme_toggle: "Activar o desactivar el modo oscuro",
+        intro: "Esta página explora quién dominó la Fórmula 1, temporada a temporada, desde el primer Campeonato del Mundo en 1950 hasta hoy. El dominio se mide como el <strong>porcentaje de carreras ganadas en cada temporada</strong>, para poder comparar épocas distintas de forma justa, y se observa desde tres ángulos: <strong>equipos</strong> (cada constructor tal como se inscribió oficialmente), <strong>motores</strong> (el fabricante que hay detrás del coche ganador, que a menudo suministra a varios equipos a la vez) y <strong>fábricas</strong> (equipos agrupados por linaje: una fábrica que cambió de nombre y de dueño con los años, como Tyrrell → BAR → Honda → Brawn → Mercedes, cuenta como una sola).",
+        howto_label: "Cómo usarla",
+        howto_slider: "<strong>Barra deslizante:</strong> suaviza las líneas de 1 a 10 años. Las ventanas cortas muestran cada temporada; las largas revelan las grandes eras.",
+        howto_click: "<strong>Haz clic en un nombre de la leyenda:</strong> lo ocultas o lo muestras.",
+        howto_dblclick: "<strong>Doble clic en un nombre:</strong> lo aíslas. Otro doble clic los recupera todos.",
+        howto_zoom: "<strong>Arrastra sobre un gráfico:</strong> amplías un periodo. Doble clic para restablecer.",
+        howto_hover: "<strong>Pasa el cursor por una línea:</strong> ves el valor exacto.",
+        howto_tip: "Truco: mueve la barra despacio y verás cómo se derriten los picos.",
+        overall_title: "Visión general",
+        overall_text: "El dominio en la F1 llega por oleadas: todas las eras han acabado tarde o temprano, y Ferrari es el único equipo que ha vuelto a la cima en épocas muy distintas. Los nombres de los equipos, por sí solos, esconden parte de la historia, porque el motor y la fábrica que hay detrás de un coche importan tanto como el escudo que lleva. Y lo que vemos depende de cómo miramos: tanto la ventana de suavizado como la definición de «equipo» cambian el panorama.",
+        overall_button: "Lee el informe completo →",
+        notes_label: "Qué muestra",
+        teams_title: "Equipos",
+        teams_question: "¿Qué constructores ganaron más en cada era?",
+        teams_notes: "Destacan seis eras: Alfa Romeo, Ferrari y Mercedes en los años 50; Cooper, Lotus y Tyrrell desde finales de los 50 hasta mediados de los 70; una década equilibrada, de 1975 a 1985, sin un líder claro; McLaren y Williams turnándose de 1985 a 2000; Ferrari con Michael Schumacher en los años 2000; y Red Bull y Mercedes desde 2010. La racha más aplastante es la de <strong>Mercedes en 2014-2016</strong>, que ganó más del 85% de las carreras en una media de tres años.",
+        engines_title: "Motores",
+        engines_question: "¿Qué fabricantes de motores impulsaban a los coches ganadores?",
+        engines_notes: "Los motores cuentan otra historia, porque un mismo motor puede ganar con varios equipos a la vez. El <strong>Ford Cosworth</strong>, vendido a casi cualquier equipo, impulsó una de las eras de dominio más largas de la F1, desde finales de los 60 hasta principios de los 80, con cerca del 90% de las victorias en su mejor momento. Renault vivió dos grandes eras con equipos distintos (Williams y Benetton en los 90, Red Bull en 2010-2013). Y lo que parece un cambio en la cima en 2025-2026 es en realidad continuidad: McLaren y Mercedes corren con <strong>motores Mercedes</strong>.",
+        factories_title: "Fábricas",
+        factories_question: "¿Qué equipos dominan cuando los agrupamos por la fábrica de la que proceden?",
+        factories_notes: "Agrupar los equipos por linaje apenas cambia las eras, pero sí las historias. Una sola fábrica, <strong>Tyrrell → Mercedes</strong>, protagoniza dos grandes eras separadas por unos 40 años, con el título de Brawn en 2009 entre medias. Y el nombre «mercedes» se divide en los dos equipos distintos que fue en realidad: el equipo oficial de los años 50 y el actual.",
+        about: "<strong>Sobre los datos.</strong> Datos: " + F1DB_LINK + " versión v2026.20.0, hasta el Gran Premio de Brasil de 2026 (CC BY 4.0). La temporada 2026 está incompleta, así que sus valores son provisionales. Se excluyen las 500 Millas de Indianápolis (1950-1960): puntuaban para el campeonato, pero eran una carrera estadounidense aparte. Las victorias en coches compartidos cuentan una vez por carrera. Las ventanas pares (2, 4, 6…) no pueden centrarse perfectamente, y las medias son menos fiables en los dos extremos de la serie.",
+        footer_data: "Datos:",
+        footer_analysis: "Análisis completo",
+        footer_made_by: "Hecho por AliR-lab",
+        axis_season: "Temporada",
+        axis_won: "% de carreras ganadas",
+        legend_team: "Equipo",
+        legend_engine: "Motor",
+        legend_factory: "Fábrica",
+        slider_prefix: "Media móvil: ",
+        years_one: "{n} año",
+        years_other: "{n} años"
+      },
+
+      // En francés va un espacio irrompible (&nbsp; o  ) antes de : ; ? y %
+      fr: {
+        title: "La domination en F1",
+        subtitle: "Qui a régné sur chaque ère de la Formule 1, 1950-2026",
+        language: "Langue",
+        theme_toggle: "Activer ou désactiver le mode sombre",
+        intro: "Cette page explore qui a dominé la Formule 1, saison après saison, du premier championnat du monde en 1950 à aujourd’hui. La domination se mesure en <strong>pourcentage de courses gagnées chaque saison</strong>, afin de comparer équitablement des époques différentes, et elle est observée sous trois angles&nbsp;: les <strong>écuries</strong> (chaque constructeur tel qu’il a été officiellement engagé), les <strong>moteurs</strong> (le motoriste derrière la voiture gagnante, qui équipe souvent plusieurs écuries à la fois) et les <strong>usines</strong> (les écuries regroupées par filiation&nbsp;: une usine qui a changé de nom et de propriétaire au fil des ans, comme Tyrrell → BAR → Honda → Brawn → Mercedes, compte pour une seule).",
+        howto_label: "Mode d’emploi",
+        howto_slider: "<strong>Curseur&nbsp;:</strong> lissez les courbes de 1 à 10 ans. Les fenêtres courtes montrent chaque saison&nbsp;; les longues révèlent les grandes ères.",
+        howto_click: "<strong>Cliquez sur un nom dans la légende&nbsp;:</strong> masquez-le ou affichez-le.",
+        howto_dblclick: "<strong>Double-cliquez sur un nom&nbsp;:</strong> isolez-le. Double-cliquez à nouveau pour tout réafficher.",
+        howto_zoom: "<strong>Faites glisser sur un graphique&nbsp;:</strong> zoomez sur une période. Double-cliquez pour réinitialiser.",
+        howto_hover: "<strong>Survolez une courbe&nbsp;:</strong> affichez la valeur exacte.",
+        howto_tip: "Astuce&nbsp;: déplacez le curseur lentement et regardez les pics fondre.",
+        overall_title: "Vue d’ensemble",
+        overall_text: "En F1, la domination arrive par vagues&nbsp;: toutes les ères ont fini par s’achever, et Ferrari est la seule écurie revenue au sommet à des époques très différentes. Les noms des écuries ne racontent qu’une partie de l’histoire, car le moteur et l’usine derrière une voiture comptent autant que le blason qu’elle arbore. Et ce que l’on voit dépend de la façon dont on regarde&nbsp;: la fenêtre de lissage comme la définition d’une «&nbsp;écurie&nbsp;» changent le tableau.",
+        overall_button: "Lire le rapport complet →",
+        notes_label: "Ce qu’on y voit",
+        teams_title: "Écuries",
+        teams_question: "Quels constructeurs ont le plus gagné à chaque époque&nbsp;?",
+        teams_notes: "Six ères se détachent&nbsp;: Alfa Romeo, Ferrari et Mercedes dans les années 1950&nbsp;; Cooper, Lotus et Tyrrell de la fin des années 1950 au milieu des années 1970&nbsp;; une décennie équilibrée, de 1975 à 1985, sans leader clair&nbsp;; McLaren et Williams qui se relaient de 1985 à 2000&nbsp;; Ferrari avec Michael Schumacher dans les années 2000&nbsp;; et Red Bull et Mercedes depuis 2010. La période la plus écrasante est celle de <strong>Mercedes en 2014-2016</strong>, avec plus de 85&nbsp;% des courses gagnées en moyenne sur trois ans.",
+        engines_title: "Moteurs",
+        engines_question: "Quels motoristes propulsaient les voitures gagnantes&nbsp;?",
+        engines_notes: "Les moteurs racontent une autre histoire, car un même moteur peut gagner avec plusieurs écuries à la fois. Le <strong>Ford Cosworth</strong>, vendu à presque toutes les écuries, a porté l’une des plus longues ères de domination de la F1, de la fin des années 1960 au début des années 1980, avec près de 90&nbsp;% des victoires à son apogée. Renault a connu deux grandes ères avec des écuries différentes (Williams et Benetton dans les années 1990, Red Bull en 2010-2013). Et ce qui ressemble à un changement au sommet en 2025-2026 est en réalité une continuité&nbsp;: McLaren et Mercedes roulent toutes deux avec des <strong>moteurs Mercedes</strong>.",
+        factories_title: "Usines",
+        factories_question: "Quelles écuries dominent quand on les regroupe selon l’usine dont elles sont issues&nbsp;?",
+        factories_notes: "Regrouper les écuries par filiation change à peine les ères, mais change les histoires. Une même usine, <strong>Tyrrell → Mercedes</strong>, compte deux grandes ères à environ 40 ans d’intervalle, avec le titre de Brawn en 2009 entre les deux. Et le nom «&nbsp;mercedes&nbsp;» se scinde en deux écuries bien distinctes&nbsp;: l’équipe d’usine des années 1950 et l’actuelle.",
+        about: "<strong>À propos des données.</strong> Données&nbsp;: " + F1DB_LINK + " version v2026.20.0, jusqu’au Grand Prix du Brésil 2026 (CC BY 4.0). La saison 2026 n’est pas terminée, ses valeurs sont donc provisoires. Les 500 Miles d’Indianapolis (1950-1960) sont exclus&nbsp;: ils comptaient pour le championnat, mais formaient une course américaine à part. Les victoires en voiture partagée comptent une fois par course. Les fenêtres paires (2, 4, 6…) ne peuvent pas être parfaitement centrées, et les moyennes sont moins fiables aux deux extrémités de la période.",
+        footer_data: "Données&nbsp;:",
+        footer_analysis: "Analyse complète",
+        footer_made_by: "Réalisé par AliR-lab",
+        axis_season: "Saison",
+        axis_won: "% de courses gagnées",
+        legend_team: "Écurie",
+        legend_engine: "Moteur",
+        legend_factory: "Usine",
+        slider_prefix: "Moyenne mobile : ",
+        years_one: "{n} an",
+        years_other: "{n} ans"
+      },
+
+      it: {
+        title: "Il dominio in F1",
+        subtitle: "Chi ha comandato in ogni era della Formula 1, 1950-2026",
+        language: "Lingua",
+        theme_toggle: "Attiva o disattiva la modalità scura",
+        intro: "Questa pagina esplora chi ha dominato la Formula 1, stagione dopo stagione, dal primo Campionato del Mondo nel 1950 a oggi. Il dominio si misura come <strong>percentuale di gare vinte in ogni stagione</strong>, così da confrontare in modo equo epoche diverse, e viene osservato da tre punti di vista: le <strong>scuderie</strong> (ogni costruttore così come è stato iscritto ufficialmente), i <strong>motori</strong> (il motorista dietro la monoposto vincente, che spesso fornisce più scuderie contemporaneamente) e le <strong>fabbriche</strong> (scuderie raggruppate per discendenza: una fabbrica che negli anni ha cambiato nome e proprietario, come Tyrrell → BAR → Honda → Brawn → Mercedes, conta come una sola).",
+        howto_label: "Come si usa",
+        howto_slider: "<strong>Cursore:</strong> smussa le linee da 1 a 10 anni. Le finestre brevi mostrano ogni stagione; quelle lunghe rivelano le grandi ere.",
+        howto_click: "<strong>Clicca su un nome nella legenda:</strong> lo nascondi o lo mostri.",
+        howto_dblclick: "<strong>Doppio clic su un nome:</strong> lo isoli. Un altro doppio clic li riporta tutti.",
+        howto_zoom: "<strong>Trascina su un grafico:</strong> ingrandisci un periodo. Doppio clic per ripristinare.",
+        howto_hover: "<strong>Passa il mouse su una linea:</strong> vedi il valore esatto.",
+        howto_tip: "Consiglio: muovi il cursore lentamente e guarda i picchi sciogliersi.",
+        overall_title: "Quadro generale",
+        overall_text: "Il dominio in F1 arriva a ondate: ogni era prima o poi è finita, e la Ferrari è l’unica scuderia tornata al vertice in periodi molto diversi. I soli nomi delle scuderie nascondono parte della storia, perché il motore e la fabbrica dietro una monoposto contano quanto lo stemma che porta. E ciò che vediamo dipende da come guardiamo: sia la finestra di smussamento sia la definizione di «scuderia» cambiano il quadro.",
+        overall_button: "Leggi il report completo →",
+        notes_label: "Cosa mostra",
+        teams_title: "Scuderie",
+        teams_question: "Quali costruttori hanno vinto di più in ogni era?",
+        teams_notes: "Spiccano sei ere: Alfa Romeo, Ferrari e Mercedes negli anni ’50; Cooper, Lotus e Tyrrell dalla fine degli anni ’50 alla metà degli anni ’70; un decennio equilibrato, dal 1975 al 1985, senza un leader chiaro; McLaren e Williams che si alternano dal 1985 al 2000; la Ferrari di Michael Schumacher negli anni 2000; e Red Bull e Mercedes dal 2010. Il periodo più schiacciante è quello della <strong>Mercedes nel 2014-2016</strong>, che ha vinto oltre l’85% delle gare in media su tre anni.",
+        engines_title: "Motori",
+        engines_question: "Quali motoristi spingevano le monoposto vincenti?",
+        engines_notes: "I motori raccontano un’altra storia, perché uno stesso motore può vincere con più scuderie contemporaneamente. Il <strong>Ford Cosworth</strong>, venduto a quasi tutte le scuderie, ha spinto una delle ere di dominio più lunghe della F1, dalla fine degli anni ’60 all’inizio degli anni ’80, con quasi il 90% delle vittorie al suo apice. La Renault ha vissuto due grandi ere con scuderie diverse (Williams e Benetton negli anni ’90, Red Bull nel 2010-2013). E quello che sembra un cambio al vertice nel 2025-2026 è in realtà continuità: McLaren e Mercedes corrono entrambe con <strong>motori Mercedes</strong>.",
+        factories_title: "Fabbriche",
+        factories_question: "Quali scuderie dominano se le raggruppiamo in base alla fabbrica da cui provengono?",
+        factories_notes: "Raggruppare le scuderie per discendenza cambia appena le ere, ma cambia le storie. Una sola fabbrica, <strong>Tyrrell → Mercedes</strong>, vanta due grandi ere a circa 40 anni di distanza, con il titolo della Brawn nel 2009 nel mezzo. E il nome «mercedes» si divide nelle due scuderie diverse che è stato in realtà: la squadra ufficiale degli anni ’50 e quella attuale.",
+        about: "<strong>Sui dati.</strong> Dati: " + F1DB_LINK + " versione v2026.20.0, fino al Gran Premio del Brasile 2026 (CC BY 4.0). La stagione 2026 è incompleta, quindi i suoi valori sono provvisori. La 500 Miglia di Indianapolis (1950-1960) è esclusa: valeva per il campionato, ma era una gara americana a parte. Le vittorie con vetture condivise contano una volta per gara. Le finestre pari (2, 4, 6…) non possono essere centrate perfettamente, e le medie sono meno affidabili alle due estremità della serie.",
+        footer_data: "Dati:",
+        footer_analysis: "Analisi completa",
+        footer_made_by: "Realizzato da AliR-lab",
+        axis_season: "Stagione",
+        axis_won: "% di gare vinte",
+        legend_team: "Scuderia",
+        legend_engine: "Motore",
+        legend_factory: "Fabbrica",
+        slider_prefix: "Media mobile: ",
+        years_one: "{n} anno",
+        years_other: "{n} anni"
+      }
+    };
+
+    var currentLang = "en";
+
+    function t(key) {
+      return translations[currentLang][key];
+    }
+
+    // "1 año" / "2 años": elige singular o plural según el número de años.
+    function yearsLabel(n) {
+      return t(n === 1 ? "years_one" : "years_other").replace("{n}", n);
+    }
+
+    // Idioma inicial: el guardado; si no, el primero del navegador que tengamos; si no, inglés.
+    function detectLanguage() {
+      var saved = null;
+      try { saved = localStorage.getItem("lang"); } catch (e) {}
+      if (translations[saved]) return saved;
+
+      var browser = navigator.languages || [navigator.language || ""];
+      for (var i = 0; i < browser.length; i++) {
+        var code = String(browser[i]).slice(0, 2).toLowerCase();  // "es-ES" → "es"
+        if (translations[code]) return code;
+      }
+      return "en";
+    }
+
+    // Cambia los textos de la página (no los de los gráficos).
+    function applyTranslations() {
+      document.documentElement.lang = currentLang;
+
+      document.querySelectorAll("[data-i18n]").forEach(function (el) {
+        el.innerHTML = t(el.dataset.i18n);
+      });
+
+      // data-i18n-attr="aria-label:theme_toggle" → atributo aria-label con la clave theme_toggle
+      document.querySelectorAll("[data-i18n-attr]").forEach(function (el) {
+        var parts = el.dataset.i18nAttr.split(":");
+        el.setAttribute(parts[0], t(parts[1]));
+      });
+
+      document.querySelectorAll(".lang-switch button").forEach(function (btn) {
+        btn.setAttribute("aria-pressed", btn.dataset.lang === currentLang ? "true" : "false");
+      });
+    }
+
+    // Cambia solo los textos de los gráficos. relayout toca el layout, no los datos,
+    // así que se conservan las líneas ocultas en la leyenda y la posición de la barra.
+    function translateCharts() {
+      if (typeof Plotly === "undefined") return;
+
+      document.querySelectorAll(".js-plotly-plot").forEach(function (chart) {
+        var layout = chart.layout || {};
+        var update = {
+          "xaxis.title.text": t("axis_season"),
+          "yaxis.title.text": t("axis_won")
+        };
+
+        var box = chart.closest(".chart");
+        var legendKey = box && box.dataset.legend;
+        if (legendKey) update["legend.title.text"] = t(legendKey);
+
+        if (layout.sliders && layout.sliders.length) {
+          update["sliders[0].currentvalue.prefix"] = t("slider_prefix");
+          // parseInt lee el número del principio de la etiqueta en cualquier idioma ("3 yr", "3 años"...)
+          layout.sliders[0].steps.forEach(function (step, i) {
+            update["sliders[0].steps[" + i + "].label"] = yearsLabel(parseInt(step.label, 10));
+          });
+        }
+
+        Plotly.relayout(chart, update);
+      });
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      try { localStorage.setItem("lang", lang); } catch (e) {}
+      applyTranslations();
+      translateCharts();
+    }
+
+    document.querySelectorAll(".lang-switch button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setLanguage(btn.dataset.lang);
+      });
+    });
+
+    // Los textos de la página se traducen ya; los gráficos, cuando Plotly haya cargado.
+    currentLang = detectLanguage();
+    applyTranslations();
+    window.addEventListener("load", translateCharts);
   </script>
 </body>
 </html>
