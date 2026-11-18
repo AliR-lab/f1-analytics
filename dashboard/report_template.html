@@ -69,6 +69,9 @@
     /* ---------- Base ---------- */
     * { box-sizing: border-box; }
 
+    /* Alto de la cabecera compacta: lo usan el índice lateral y los saltos a las secciones */
+    :root { --bar-h: 52px; }
+
     html, body { margin: 0; }
 
     /* Los enlaces del índice bajan suavemente, salvo si el usuario prefiere menos movimiento */
@@ -122,17 +125,63 @@
     }
 
     /* ---------- Cabecera ---------- */
+    /* Mismo enfoque que el dashboard: .site-header es el hueco que ocupa la cabecera en la
+       página; .header-bar es la barra visible. Al compactarse, la barra pasa a "fixed" y el
+       hueco conserva su alto (lo fija el JS), así el contenido de debajo no salta. */
+    .site-header { position: relative; }
+
+    /* Franja invisible arriba del todo: cuando sale de pantalla, la cabecera se compacta */
+    .header-sentinel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 8px;
+      pointer-events: none;
+    }
+
+    .header-bar {
+      position: relative;
+      z-index: 100;
+      padding: 32px 0 24px;
+      transition: padding 0.3s ease;
+    }
+
+    /* Fondo de cristal en una capa aparte para poder fundirlo con opacity */
+    .header-bar::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: var(--glass);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      backdrop-filter: blur(24px) saturate(180%);
+      border-bottom: 1px solid var(--glass-border);
+      box-shadow:
+        inset 0 -1px 0 var(--glass-highlight),
+        0 4px 24px var(--shadow);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
     /* flex-wrap: en pantallas estrechas los controles bajan debajo del título */
-    header {
+    .header-inner {
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
       justify-content: space-between;
       gap: 16px;
-      padding: 32px 0 24px;
     }
 
-    .header-text { flex: 1 1 280px; }
+    /* min-width: 0 deja que el título se encoja (y se corte con "…") en la barra compacta */
+    .header-text { flex: 1 1 280px; min-width: 0; }
+
+    /* Enlace y título: uno encima del otro; en la barra compacta, en una fila */
+    .header-title {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
 
     .header-controls {
       flex-shrink: 0;
@@ -142,24 +191,71 @@
     }
 
     .back-link {
-      display: inline-block;
       margin-bottom: 14px;
       font-size: 0.9rem;
       font-weight: 600;
+      white-space: nowrap;
+      transition: font-size 0.3s ease, margin 0.3s ease;
     }
+
+    /* El texto corto ("← Dashboard") solo se ve en la barra compacta */
+    .back-short { display: none; }
 
     h1 {
       margin: 0;
       font-size: clamp(1.8rem, 5vw, 2.6rem);
       font-weight: 700;
       letter-spacing: -0.02em;
+      transition: font-size 0.3s ease;
     }
 
+    /* max-height permite animar el plegado; 5em sobra para dos líneas */
     .subtitle {
+      max-height: 5em;
+      overflow: hidden;
       margin: 4px 0 0;
       color: var(--text-muted);
       font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+      transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease;
     }
+
+    /* ---------- Cabecera compacta ---------- */
+    .site-header.is-compact .header-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 8px 0;
+    }
+
+    .site-header.is-compact .header-bar::before { opacity: 1; }
+
+    /* Enlace, título y controles en una sola fila, también en el móvil */
+    .site-header.is-compact .header-inner { flex-wrap: nowrap; align-items: center; gap: 12px; }
+
+    .site-header.is-compact .header-title { flex-direction: row; align-items: center; gap: 12px; }
+
+    .site-header.is-compact .back-link { margin-bottom: 0; font-size: 0.8rem; }
+    .site-header.is-compact .back-long { display: none; }
+    .site-header.is-compact .back-short { display: inline; }
+
+    .site-header.is-compact h1 {
+      min-width: 0;
+      font-size: 1.05rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .site-header.is-compact .subtitle {
+      max-height: 0;
+      margin-top: 0;
+      opacity: 0;
+    }
+
+    .site-header.is-compact .lang-switch { height: 36px; }
+    .site-header.is-compact .lang-switch button { padding: 4px; }
+    .site-header.is-compact .theme-toggle { width: 36px; height: 36px; }
 
     .theme-toggle {
       flex-shrink: 0;
@@ -235,19 +331,21 @@
         align-items: start;
       }
 
+      /* Se pega justo debajo de la cabecera compacta */
       .toc {
         position: sticky;
-        top: 24px;
-        max-height: calc(100vh - 48px);
+        top: calc(var(--bar-h) + 16px);
+        max-height: calc(100vh - var(--bar-h) - 32px);
         overflow-y: auto;
         overscroll-behavior: contain;
       }
     }
 
     /* ---------- Índice ---------- */
+    /* Las reglas de la lista valen para el lateral (.toc) y para el panel del móvil (.toc-panel) */
     .toc { padding: 20px; }
 
-    .toc ol {
+    :is(.toc, .toc-panel) ol {
       list-style: none;
       margin: 0;
       padding: 0;
@@ -257,9 +355,9 @@
       counter-reset: toc;
     }
 
-    .toc li { counter-increment: toc; }
+    :is(.toc, .toc-panel) li { counter-increment: toc; }
 
-    .toc a {
+    :is(.toc, .toc-panel) a {
       display: flex;
       gap: 10px;
       padding: 7px 10px;
@@ -270,7 +368,7 @@
       transition: color 0.15s ease, background-color 0.15s ease;
     }
 
-    .toc a::before {
+    :is(.toc, .toc-panel) a::before {
       content: counter(toc);
       flex-shrink: 0;
       width: 1.1em;
@@ -278,15 +376,106 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .toc a:hover { color: var(--text); background: var(--tint); text-decoration: none; }
-    .toc a[aria-current="true"] { color: var(--accent); background: var(--tint); font-weight: 600; }
-    .toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    :is(.toc, .toc-panel) a:hover { color: var(--text); background: var(--tint); text-decoration: none; }
+    :is(.toc, .toc-panel) a[aria-current="true"] { color: var(--accent); background: var(--tint); font-weight: 600; }
+    :is(.toc, .toc-panel) a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+    /* ---------- Índice desplegable (pantallas estrechas) ---------- */
+    /* Oculto por defecto: solo aparece por debajo de 1100 px y si el JS lo ha montado */
+    .toc-menu { display: none; min-width: 0; }
+
+    .toc-button {
+      position: relative;
+      max-width: 100%;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+      border-radius: 999px;
+      color: var(--text);
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: height 0.3s ease;
+    }
+
+    /* Zona táctil de 44 px aunque en la barra compacta el botón se vea de 36 px */
+    .toc-button::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 44px;
+      transform: translateY(-50%);
+    }
+
+    .toc-button svg { flex-shrink: 0; width: 18px; height: 18px; }
+    .toc-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* Si "6 · Decisions" no cabe en un móvil estrecho, se corta con "…" */
+    .toc-button-current { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+    .toc-num { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+    .site-header.is-compact .toc-button { height: 36px; padding: 0 12px; }
+
+    /* Cuelga de .header-bar (no del botón): así se alinea con el borde de la página */
+    .toc-panel {
+      position: absolute;
+      z-index: 1;
+      top: calc(100% + 8px);
+      right: 16px;
+      width: min(420px, calc(100% - 32px));
+      max-height: calc(100vh - var(--bar-h) - 24px);
+      max-height: calc(100dvh - var(--bar-h) - 24px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 8px;
+      border-radius: 16px;
+    }
+
+    .toc-panel[hidden] { display: none; }
+
+    .toc-panel a { min-height: 44px; align-items: center; }
+
+    /* Texto que leen los lectores de pantalla pero no se ve */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ---------- Pantallas estrechas: sin lateral ---------- */
+    /* Mismo punto de corte que el lateral (min-width: 1100px), visto desde el otro lado */
+    @media (max-width: 1099.98px) {
+      .has-toc-menu .toc-menu { display: block; }
+      .has-toc-menu .toc { display: none; }
+
+      /* En la barra compacta solo cabe el enlace: el título se oculta */
+      .site-header.is-compact h1,
+      .site-header.is-compact .subtitle { display: none; }
+      .site-header.is-compact .header-text { flex: 0 0 auto; }
+
+      /* Los controles pueden encogerse: lo que se recorta es el texto del botón del índice */
+      .site-header.is-compact .header-controls { flex-shrink: 1; min-width: 0; }
+      .lang-switch, .theme-toggle { flex-shrink: 0; }
+    }
 
     /* ---------- Tarjetas de sección ---------- */
     .card { padding: 28px 32px; }
 
-    /* Deja sitio arriba al saltar desde el índice */
-    .report > section { scroll-margin-top: 24px; }
+    /* Deja sitio arriba al saltar desde el índice, para que la barra no tape el título */
+    .report > section { scroll-margin-top: calc(var(--bar-h) + 16px); }
 
     .card h2 {
       margin: 0 0 16px;
@@ -526,40 +715,63 @@
 
     /* ---------- Móvil ---------- */
     @media (max-width: 600px) {
-      header { padding-top: 20px; }
+      .header-bar { padding-top: 20px; }
       .card { padding: 18px 16px; border-radius: 16px; }
       .card h2 { font-size: 1.3rem; }
       .prose { font-size: 1rem; }
       .threshold { grid-template-columns: 1fr; gap: 8px; }
     }
+
+    /* Quien tiene desactivadas las animaciones en su sistema ve los cambios al instante */
+    @media (prefers-reduced-motion: reduce) {
+      .header-bar, .header-bar *, .header-bar::before { transition: none !important; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="header-text">
-        <a class="back-link" href="index.html" data-i18n="back">← Back to the dashboard</a>
-        <h1 data-i18n="title">F1 Dominance: the full report</h1>
-        <p class="subtitle" data-i18n="subtitle">Who ruled each era of Formula 1, 1950-2026, and how much the answer depends on how we look</p>
-      </div>
-      <div class="header-controls">
-        <div class="lang-switch glass" role="group" aria-label="Language" data-i18n-attr="aria-label:language">
-          <button type="button" data-lang="en" lang="en" title="English" aria-label="English">EN</button>
-          <span class="lang-sep" aria-hidden="true">·</span>
-          <button type="button" data-lang="es" lang="es" title="Español" aria-label="Español">ES</button>
+  <header class="site-header" id="site-header">
+    <span class="header-sentinel" aria-hidden="true"></span>
+    <div class="header-bar">
+      <div class="container header-inner">
+        <div class="header-text">
+          <div class="header-title">
+            <a class="back-link" href="index.html"><span class="back-long" data-i18n="back">← Back to the dashboard</span><span class="back-short" data-i18n="back_short">← Dashboard</span></a>
+            <h1 data-i18n="title">F1 Dominance: the full report</h1>
+          </div>
+          <p class="subtitle" data-i18n="subtitle">Who ruled each era of Formula 1, 1950-2026, and how much the answer depends on how we look</p>
         </div>
-        <button class="theme-toggle glass" id="theme-toggle" type="button" aria-label="Toggle dark mode" data-i18n-attr="aria-label:theme_toggle">
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
-          </svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
-          </svg>
-        </button>
+        <div class="header-controls">
+          <!-- Índice desplegable: el JS copia dentro del panel la lista del índice lateral -->
+          <div class="toc-menu">
+            <button class="toc-button glass" id="toc-button" type="button" aria-expanded="false" aria-controls="toc-panel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16"/>
+              </svg>
+              <span class="toc-button-label" data-i18n="toc_label">Contents</span>
+              <span class="toc-button-current" hidden></span>
+            </button>
+            <nav class="toc-panel glass" id="toc-panel" hidden aria-label="Contents" data-i18n-attr="aria-label:toc_label"></nav>
+          </div>
+          <div class="lang-switch glass" role="group" aria-label="Language" data-i18n-attr="aria-label:language">
+            <button type="button" data-lang="en" lang="en" title="English" aria-label="English">EN</button>
+            <span class="lang-sep" aria-hidden="true">·</span>
+            <button type="button" data-lang="es" lang="es" title="Español" aria-label="Español">ES</button>
+          </div>
+          <button class="theme-toggle glass" id="theme-toggle" type="button" aria-label="Toggle dark mode" data-i18n-attr="aria-label:theme_toggle">
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>
+            </svg>
+          </button>
+        </div>
       </div>
-    </header>
+    </div>
+  </header>
 
+  <div class="container">
     <main>
       <nav class="toc glass" aria-label="Contents" data-i18n-attr="aria-label:toc_label">
         <p class="label" data-i18n="toc_label">Contents</p>
@@ -814,22 +1026,129 @@ uv sync</code></pre>
       setTheme(current === "dark" ? "light" : "dark");
     });
 
+    // ---------- Cabecera compacta ----------
+    // Mismo código que el dashboard.
+    (function () {
+      if (typeof IntersectionObserver === "undefined") return;
+
+      var header = document.getElementById("site-header");
+      var sentinel = header.querySelector(".header-sentinel");
+      var unlockTimer = null;
+
+      // La franja de arriba visible = estamos arriba del todo → cabecera normal.
+      new IntersectionObserver(function (entries) {
+        var atTop = entries[0].isIntersecting;
+        var compact = header.classList.contains("is-compact");
+
+        if (!atTop && !compact) {
+          // Fija el alto del hueco antes de que la barra pase a "fixed", para que la
+          // página no suba de golpe.
+          clearTimeout(unlockTimer);
+          header.style.height = header.offsetHeight + "px";
+          header.classList.add("is-compact");
+        } else if (atTop && compact) {
+          header.classList.remove("is-compact");
+          // Libera el alto cuando acaba la animación (un poco más que los 0.3s del CSS),
+          // por si ha cambiado (otro idioma, giro del móvil...).
+          unlockTimer = setTimeout(function () {
+            header.style.height = "";
+          }, 350);
+        }
+      }).observe(sentinel);
+    })();
+
+    // ---------- Índice desplegable (pantallas estrechas) ----------
+    (function () {
+      var menu = document.querySelector(".toc-menu");
+      var button = document.getElementById("toc-button");
+      var panel = document.getElementById("toc-panel");
+      var wide = window.matchMedia("(min-width: 1100px)");
+
+      // El panel usa una copia de la lista del lateral: las 8 secciones se escriben una sola vez.
+      // Los data-i18n se copian con ella, así que también cambia de idioma.
+      panel.appendChild(document.querySelector(".toc ol").cloneNode(true));
+      // Con el panel ya montado, el CSS puede ocultar el índice de arriba en el móvil.
+      document.documentElement.classList.add("has-toc-menu");
+
+      function setOpen(open, returnFocus) {
+        panel.hidden = !open;
+        button.setAttribute("aria-expanded", open ? "true" : "false");
+        if (open) {
+          // El foco va a la sección que se está leyendo, o a la primera.
+          var target = panel.querySelector('a[aria-current="true"]') || panel.querySelector("a");
+          target.focus();
+        } else if (returnFocus) {
+          button.focus();
+        }
+      }
+
+      button.addEventListener("click", function () {
+        setOpen(panel.hidden);
+      });
+
+      // Al tocar una sección se cierra el panel; el enlace #ancla hace el desplazamiento.
+      panel.addEventListener("click", function (event) {
+        if (event.target.closest("a")) setOpen(false);
+      });
+
+      // Tocar fuera del botón y del panel lo cierra.
+      document.addEventListener("pointerdown", function (event) {
+        if (!panel.hidden && !menu.contains(event.target)) setOpen(false);
+      });
+
+      // Esc lo cierra y devuelve el foco al botón.
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && !panel.hidden) setOpen(false, true);
+      });
+
+      // Si el tabulador saca el foco del panel, también se cierra.
+      menu.addEventListener("focusout", function (event) {
+        if (!panel.hidden && event.relatedTarget && !menu.contains(event.relatedTarget)) setOpen(false);
+      });
+
+      // Al ensanchar la ventana (o girar el móvil) vuelve el lateral: el panel sobra.
+      wide.addEventListener("change", function (event) {
+        if (event.matches) setOpen(false);
+      });
+    })();
+
     // ---------- Índice: marca la sección que se está leyendo ----------
     (function () {
       if (typeof IntersectionObserver === "undefined") return;
 
+      // Cada sección tiene dos enlaces: el del lateral y el del panel.
       var links = {};
-      document.querySelectorAll(".toc a").forEach(function (a) {
-        links[a.getAttribute("href").slice(1)] = a;
+      document.querySelectorAll(".toc a, .toc-panel a").forEach(function (a) {
+        var id = a.getAttribute("href").slice(1);
+        (links[id] = links[id] || []).push(a);
       });
+      var ids = Object.keys(links);  // en el orden del índice: summary, metric, teams...
+
+      var label = document.querySelector(".toc-button-label");
+      var current = document.querySelector(".toc-button-current");
+
+      function markCurrent(id) {
+        ids.forEach(function (key) {
+          links[key].forEach(function (a) {
+            a.setAttribute("aria-current", key === id ? "true" : "false");
+          });
+        });
+
+        // El botón pasa de "Contents" a "3 · Teams". "Contents" se queda solo para los
+        // lectores de pantalla, que leen "Contents 3 · Teams".
+        // El nombre corto lleva su data-i18n, así applyTranslations lo cambia de idioma.
+        var num = ids.indexOf(id) + 1;
+        var key = "s" + num + "_short";
+        current.innerHTML = '<span class="toc-num">' + num + '</span> · <span data-i18n="' + key + '">' +
+          (typeof t === "function" ? t(key) : "") + "</span>";
+        current.hidden = false;
+        label.classList.add("sr-only");
+      }
 
       // Una sección cuenta como "actual" cuando cruza la franja superior de la pantalla.
       var observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
-          if (!entry.isIntersecting) return;
-          Object.keys(links).forEach(function (id) {
-            links[id].setAttribute("aria-current", id === entry.target.id ? "true" : "false");
-          });
+          if (entry.isIntersecting) markCurrent(entry.target.id);
         });
       }, { rootMargin: "-15% 0px -75% 0px" });
 
@@ -845,17 +1164,37 @@ uv sync</code></pre>
     // Diferencia: el inglés no se repite aquí, se lee del propio HTML al cargar la página,
     // para no mantener dos copias de un texto tan largo.
     var translations = {
-      en: {},
+      // Excepción: los nombres cortos del botón del índice no están escritos en el HTML
+      // (los pone el JS), así que su inglés va aquí.
+      en: {
+        s1_short: "Summary",
+        s2_short: "Metric",
+        s3_short: "Teams",
+        s4_short: "Engines",
+        s5_short: "Factories",
+        s6_short: "Decisions",
+        s7_short: "Methodology",
+        s8_short: "Data"
+      },
 
       es: {
         doc_title: "Informe sobre el dominio en la F1",
         meta_description: "Quién mandó en cada era de la Fórmula 1, 1950-2026: el informe completo que acompaña al panel",
         back: "← Volver al panel",
+        back_short: "← Panel",
         title: "Dominio en la F1: el informe completo",
         subtitle: "Quién mandó en cada era de la Fórmula 1, 1950-2026, y cuánto depende la respuesta de cómo miramos",
         language: "Idioma",
         theme_toggle: "Activar o desactivar el modo oscuro",
         toc_label: "Índice",
+        s1_short: "Resumen",
+        s2_short: "Métrica",
+        s3_short: "Equipos",
+        s4_short: "Motores",
+        s5_short: "Fábricas",
+        s6_short: "Decisiones",
+        s7_short: "Metodología",
+        s8_short: "Datos",
 
         s1_title: "Resumen",
         s1_intro: "Cinco hallazgos a partir de todas las carreras del Campeonato del Mundo de Fórmula 1, desde 1950 hasta el Gran Premio de Brasil de 2026.",
