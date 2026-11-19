@@ -290,6 +290,29 @@
 
     .lang-sep { color: var(--text-muted); opacity: 0.6; }
 
+    /* ---------- Pastilla "Report →" de la cabecera ---------- */
+    /* Solo en pantallas de poca altura (móvil en horizontal), donde el botón flotante se oculta */
+    .header-report {
+      display: none;
+      align-items: center;
+      height: 44px;
+      padding: 0 14px;
+      border-radius: 999px;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: height 0.3s ease;
+    }
+
+    .header-report:hover { text-decoration: none; color: var(--text); }
+    .header-report:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .site-header.is-compact .header-report { height: 36px; }
+
+    @media (max-height: 500px) {
+      .header-report { display: inline-flex; }
+    }
+
     /* ---------- Tarjetas ---------- */
     main {
       display: flex;
@@ -339,6 +362,13 @@
       footer { padding-bottom: 88px; }
     }
 
+    /* Poca altura (móvil en horizontal): el botón flotante taparía el gráfico.
+       Se quita (la tarjeta Overall ya tiene su botón) y el pie recupera su margen normal. */
+    @media (max-height: 500px) {
+      .fab-report { display: none; }
+      footer { padding-bottom: 40px; }
+    }
+
     .card { padding: 24px; }
 
     .card h2 {
@@ -352,8 +382,28 @@
       color: var(--text-muted);
     }
 
-    .chart { width: 100%; overflow: hidden; }
-    .chart .plotly-graph-div { width: 100% !important; }
+    /* La altura del gráfico se decide aquí, no en JS: Plotly mide el div (autosize) y
+       Plots.resize lo reajusta al ancho y alto de la tarjeta. Si el JS fijara "height",
+       Plotly congelaría también el ancho y dejaría de reescalar. */
+    .chart { width: 100%; height: 450px; overflow: hidden; }
+    /* to_html envuelve el gráfico en un <div> propio: también necesita el 100% */
+    .chart > div,
+    .chart .plotly-graph-div { width: 100% !important; height: 100% !important; }
+
+    @media (max-width: 599px) {
+      .chart { height: 420px; }
+    }
+
+    /* Poca altura (móvil en horizontal): el botón de la leyenda y el gráfico caben enteros
+       bajo la cabecera compacta. --legend-h = botón plegable (36 px) + su margen (8 px).
+       svh = alto visible con la barra del navegador desplegada (vh si no se admite). */
+    @media (max-height: 500px) {
+      .chart {
+        --legend-h: 44px;
+        height: clamp(220px, calc(100vh - var(--bar-h) - var(--legend-h) - 24px), 450px);
+        height: clamp(220px, calc(100svh - var(--bar-h) - var(--legend-h) - 24px), 450px);
+      }
+    }
 
     /* Aviso "gira el móvil": solo en móviles en vertical */
     .rotate-tip {
@@ -371,6 +421,138 @@
     /* Con el dedo no se hace zoom arrastrando (dragmode: false), así que ese punto no aplica */
     @media (pointer: coarse) {
       .howto-drag { display: none !important; }
+    }
+
+    /* Textos de "How to use it" con dos versiones: ratón ("Click") o dedo ("Tap") */
+    .only-touch { display: none; }
+    @media (pointer: coarse) {
+      .only-touch { display: inline; }
+      .only-mouse { display: none; }
+    }
+
+    /* ---------- Leyenda propia ---------- */
+    /* La rellena el JS leyendo los trazos del gráfico. En pantallas anchas las pastillas
+       se ven siempre; por debajo de 600 px se recogen en un botón que abre una cajita. */
+    .chart-legend {
+      position: relative;
+      z-index: 5;
+      margin: 0 0 8px;
+    }
+
+    .legend-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    /* Invisible en pantalla pero lo leen los lectores de pantalla (display: none o
+       visibility: hidden lo esconderían también para ellos) */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .legend-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border: 1px solid var(--glass-border);
+      border-radius: 999px;
+      background: var(--glass);
+      box-shadow: inset 0 1px 0 var(--glass-highlight), 0 1px 4px var(--shadow);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1.3;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      /* Sin el zoom del doble toque, que se comería el doble clic en el móvil */
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      transition: color 0.15s ease, opacity 0.15s ease, background-color 0.15s ease;
+    }
+
+    .legend-pill:hover { background: color-mix(in srgb, var(--text) 7%, var(--glass)); }
+    .legend-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* Punto del color de la línea (--dot lo pone el JS) */
+    .legend-dot {
+      flex-shrink: 0;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--dot);
+      box-shadow: inset 0 0 0 1.5px var(--dot);
+      transition: background-color 0.15s ease;
+    }
+
+    /* Línea oculta: punto vacío (solo el borde) y texto atenuado */
+    .legend-pill[aria-pressed="false"] { color: var(--text-muted); opacity: 0.6; }
+    .legend-pill[aria-pressed="false"] .legend-dot { background: transparent; }
+
+    /* Botón "Teams · 10/10 ▾": solo en pantallas estrechas */
+    .legend-toggle {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      min-height: 36px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      color: var(--text);
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .legend-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .legend-caret { display: inline-block; transition: transform 0.2s ease; }
+    .chart-legend.is-open .legend-caret { transform: rotate(180deg); }
+
+    @media (pointer: coarse) {
+      .legend-pill { min-height: 32px; padding: 6px 12px; }
+    }
+
+    /* Estrecha (móvil en vertical) o de poca altura (móvil en horizontal): así, en
+       horizontal, las pastillas no empujan el gráfico y este cabe entero. */
+    @media (max-width: 599px), (max-height: 500px) {
+      .legend-toggle { display: inline-flex; }
+
+      /* Cajita flotante de cristal, encima del gráfico. Algo más opaca que las tarjetas
+         para que se lea bien sobre las líneas. */
+      .legend-list {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        padding: 10px;
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        background: color-mix(in srgb, var(--glass) 70%, var(--bg-1));
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        backdrop-filter: blur(24px) saturate(180%);
+        box-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 32px var(--shadow);
+      }
+
+      .chart-legend.is-open .legend-list { display: flex; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .legend-pill, .legend-dot, .legend-caret { transition: none; }
     }
 
     /* ---------- Barra de la media móvil ---------- */
@@ -679,6 +861,7 @@
           <p class="subtitle" data-i18n="subtitle">Who ruled each era of Formula 1, 1950-2026</p>
         </div>
         <div class="header-controls">
+          <a class="header-report glass" href="report.html" data-i18n="header_report">Report →</a>
           <div class="lang-switch glass" role="group" aria-label="Language" data-i18n-attr="aria-label:language">
             <button type="button" data-lang="en" lang="en" title="English" aria-label="English">EN</button>
             <span class="lang-sep" aria-hidden="true">·</span>
@@ -720,13 +903,15 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
               </svg>
-              <span data-i18n="howto_click"><strong>Click a name in the legend:</strong> hide or show it.</span>
+              <span class="only-mouse" data-i18n="howto_click"><strong>Click a name above the chart:</strong> hide or show it.</span>
+              <span class="only-touch" data-i18n="howto_click_touch"><strong>Tap a name above the chart:</strong> hide or show it.</span>
             </li>
             <li>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/>
               </svg>
-              <span data-i18n="howto_dblclick"><strong>Double-click a name:</strong> isolate it. Double-click again to bring them all back.</span>
+              <span class="only-mouse" data-i18n="howto_dblclick"><strong>Double-click a name:</strong> isolate it. Double-click again to bring them all back.</span>
+              <span class="only-touch" data-i18n="howto_dblclick_touch"><strong>Double-tap a name:</strong> isolate it. Double-tap again to bring them all back.</span>
             </li>
             <li class="howto-drag">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -759,7 +944,8 @@
         <h2 data-i18n="teams_title">Teams</h2>
         <p class="question" data-i18n="teams_question">Which constructors won the most in each era?</p>
         <p class="rotate-tip" data-i18n="rotate_tip">Tip: turn your phone sideways for a wider view.</p>
-        <div class="chart" data-legend="legend_team">
+        <div class="chart-legend" data-title="teams_title"></div>
+        <div class="chart">
           {{TEAMS_CHART}}
         </div>
         <div class="ma-slider">
@@ -780,7 +966,8 @@
         <h2 data-i18n="engines_title">Engines</h2>
         <p class="question" data-i18n="engines_question">Which engine manufacturers powered the winning cars?</p>
         <p class="rotate-tip" data-i18n="rotate_tip">Tip: turn your phone sideways for a wider view.</p>
-        <div class="chart" data-legend="legend_engine">
+        <div class="chart-legend" data-title="engines_title"></div>
+        <div class="chart">
           {{ENGINES_CHART}}
         </div>
         <div class="ma-slider">
@@ -801,7 +988,8 @@
         <h2 data-i18n="factories_title">Factories</h2>
         <p class="question" data-i18n="factories_question">Which teams dominate when we group them by the factory they come from?</p>
         <p class="rotate-tip" data-i18n="rotate_tip">Tip: turn your phone sideways for a wider view.</p>
-        <div class="chart" data-legend="legend_factory">
+        <div class="chart-legend" data-title="factories_title"></div>
+        <div class="chart">
           {{FACTORIES_CHART}}
         </div>
         <div class="ma-slider">
@@ -852,23 +1040,19 @@
           "paper_bgcolor": "rgba(0,0,0,0)",
           "plot_bgcolor": "rgba(0,0,0,0)",
           "font.color": text,
-          // Móvil: letra algo más pequeña y gráfico más alto. En escritorio se ponen
-          // los valores por defecto de Plotly, para deshacer el cambio al ensanchar la ventana.
+          // Móvil: letra algo más pequeña. En escritorio se pone el valor por defecto de
+          // Plotly, para deshacer el cambio al ensanchar la ventana.
           "font.size": isMobile ? 11 : 12,
-          "height": isMobile ? 420 : 450,
+          // Sin "height" ni "width": la altura la pone el CSS de .chart. autosize borra
+          // cualquier tamaño fijo y hace que Plotly mida la tarjeta.
+          "autosize": true,
           // Sin zoom por arrastre en pantallas pequeñas o táctiles: arrastrar el dedo desplaza la página.
           "dragmode": isMobile || isTouch ? false : "zoom",
           // La tarjeta ya tiene su título, así que se quita el del gráfico.
           "title.text": "",
-          // Leyenda horizontal encima del área del gráfico.
-          "legend.orientation": "h",
-          "legend.x": 0,
-          "legend.xanchor": "left",
-          "legend.y": 1.02,
-          "legend.yanchor": "bottom",
-          "legend.bgcolor": "rgba(0,0,0,0)",
-          "legend.font.color": text,
-          // La leyenda amplía estos márgenes sola si necesita más sitio.
+          // La leyenda es propia, en HTML, encima del gráfico (ver "Leyenda propia").
+          // Python ya pone showlegend=False; se repite por si el gráfico viene de antes.
+          "showlegend": false,
           "margin.t": 20,
           "margin.b": isMobile ? 30 : 40,
           "margin.l": isMobile ? 36 : 60,
@@ -917,22 +1101,49 @@
     // "load" espera a que se hayan cargado todos los scripts, incluido Plotly.
     window.addEventListener("load", styleCharts);
 
-    // Reajusta cada gráfico cuando cambia el ancho de su tarjeta (ventana redimensionada
-    // o paso de una columna a dos). Plotly por sí solo solo escucha el "resize" de la ventana.
-    window.addEventListener("load", function () {
-      if (typeof Plotly === "undefined" || typeof ResizeObserver === "undefined") return;
-
-      var observer = new ResizeObserver(function (entries) {
-        entries.forEach(function (entry) {
-          var chart = entry.target.querySelector(".js-plotly-plot");
-          if (chart) Plotly.Plots.resize(chart);
+    // Reajusta todos los gráficos al tamaño de su tarjeta. requestAnimationFrame junta
+    // varios avisos seguidos (giro + visualViewport + ResizeObserver) en una sola pasada.
+    var resizeFrame = null;
+    function resizeCharts() {
+      if (typeof Plotly === "undefined" || resizeFrame !== null) return;
+      resizeFrame = requestAnimationFrame(function () {
+        resizeFrame = null;
+        document.querySelectorAll(".chart .js-plotly-plot").forEach(function (chart) {
+          // Plots.resize devuelve una promesa que falla si el gráfico está oculto: se ignora.
+          var done = Plotly.Plots.resize(chart);
+          if (done && done.catch) done.catch(function () {});
         });
       });
+    }
 
+    // Al girar el móvil, iOS y Android tardan un poco en dar el tamaño final: se repite
+    // el ajuste al poco rato para no quedarse con el ancho de la orientación anterior.
+    function resizeAfterRotation() {
+      resizeCharts();
+      setTimeout(resizeCharts, 300);
+    }
+
+    // Se escucha desde ya, no en "load": si se gira el móvil mientras carga la página,
+    // el aviso no se pierde (resizeCharts no hace nada hasta que Plotly existe, y "load"
+    // ya llama a styleCharts, que mide los gráficos con autosize).
+    // Cambia el tamaño de la tarjeta: ventana redimensionada, paso de una columna a dos,
+    // giro del móvil o cambio de altura por CSS. Plotly por sí solo solo escucha "resize".
+    if (typeof ResizeObserver !== "undefined") {
+      var chartObserver = new ResizeObserver(resizeCharts);
       document.querySelectorAll(".chart").forEach(function (box) {
-        observer.observe(box);
+        chartObserver.observe(box);
       });
-    });
+    }
+
+    window.addEventListener("resize", resizeCharts);
+    window.addEventListener("orientationchange", resizeAfterRotation);
+    if (screen.orientation && screen.orientation.addEventListener) {
+      screen.orientation.addEventListener("change", resizeAfterRotation);
+    }
+    // visualViewport cambia con la barra del navegador y el zoom con dos dedos.
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", resizeCharts);
+    }
   </script>
 
   <script>
@@ -989,8 +1200,10 @@
         intro: "This page explores who dominated Formula 1, season by season, from the first World Championship in 1950 to today. Dominance is measured as the <strong>percentage of races won each season</strong>, so that different eras can be compared fairly, and it is seen from three angles: <strong>teams</strong> (each constructor as officially entered), <strong>engines</strong> (the manufacturer behind the winning car, often supplying several teams at once) and <strong>factories</strong> (teams grouped by lineage: a factory that changed name and owner over the years, like Tyrrell → BAR → Honda → Brawn → Mercedes, counts as one).",
         howto_label: "How to use it",
         howto_slider: "<strong>Slider:</strong> smooth the lines from 1 to 10 years. Short windows show every season; long ones reveal the big eras.",
-        howto_click: "<strong>Click a name in the legend:</strong> hide or show it.",
+        howto_click: "<strong>Click a name above the chart:</strong> hide or show it.",
+        howto_click_touch: "<strong>Tap a name above the chart:</strong> hide or show it.",
         howto_dblclick: "<strong>Double-click a name:</strong> isolate it. Double-click again to bring them all back.",
+        howto_dblclick_touch: "<strong>Double-tap a name:</strong> isolate it. Double-tap again to bring them all back.",
         howto_zoom: "<strong>Drag over a chart:</strong> zoom into a period. Double-click to reset.",
         howto_hover: "<strong>Hover a line:</strong> see the exact value.",
         howto_tip: "Tip: move the slider slowly and watch the peaks melt.",
@@ -1013,16 +1226,18 @@
         footer_made_by: "Made by AliR-lab",
         // Textos de los gráficos (se aplican con Plotly.relayout)
         axis_won: "% of races won",
-        legend_team: "Team",
-        legend_engine: "Engine",
-        legend_factory: "Factory",
         slider_prefix: "Moving average: ",
         years_one: "{n} yr",
         years_other: "{n} yr",
         // Forma completa para lectores de pantalla (aria-valuetext de la barra)
         years_long_one: "{n} year",
         years_long_other: "{n} years",
-        rotate_tip: "Tip: turn your phone sideways for a wider view."
+        rotate_tip: "Tip: turn your phone sideways for a wider view.",
+        header_report: "Report →",
+        // Leyenda propia: texto del botón plegable para lectores de pantalla
+        legend_count: "{v} of {n} lines shown",
+        // Descripción de cada pastilla, solo para lectores de pantalla (aria-describedby)
+        legend_hint: "Enter: hide or show this line. Shift+Enter: show only this line; press it again to show all."
       },
 
       es: {
@@ -1033,8 +1248,10 @@
         intro: "Esta página explora quién dominó la Fórmula 1, temporada a temporada, desde el primer Campeonato del Mundo en 1950 hasta hoy. El dominio se mide como el <strong>porcentaje de carreras ganadas en cada temporada</strong>, para poder comparar épocas distintas de forma justa, y se observa desde tres ángulos: <strong>equipos</strong> (cada constructor tal como se inscribió oficialmente), <strong>motores</strong> (el fabricante que hay detrás del coche ganador, que a menudo suministra a varios equipos a la vez) y <strong>fábricas</strong> (equipos agrupados por linaje: una fábrica que cambió de nombre y de dueño con los años, como Tyrrell → BAR → Honda → Brawn → Mercedes, cuenta como una sola).",
         howto_label: "Cómo usarla",
         howto_slider: "<strong>Barra deslizante:</strong> suaviza las líneas de 1 a 10 años. Las ventanas cortas muestran cada temporada; las largas revelan las grandes eras.",
-        howto_click: "<strong>Haz clic en un nombre de la leyenda:</strong> lo ocultas o lo muestras.",
+        howto_click: "<strong>Haz clic en un nombre encima del gráfico:</strong> lo ocultas o lo muestras.",
+        howto_click_touch: "<strong>Toca un nombre encima del gráfico:</strong> lo ocultas o lo muestras.",
         howto_dblclick: "<strong>Doble clic en un nombre:</strong> lo aíslas. Otro doble clic los recupera todos.",
+        howto_dblclick_touch: "<strong>Doble toque en un nombre:</strong> lo aíslas. Otro doble toque los recupera todos.",
         howto_zoom: "<strong>Arrastra sobre un gráfico:</strong> amplías un periodo. Doble clic para restablecer.",
         howto_hover: "<strong>Pasa el cursor por una línea:</strong> ves el valor exacto.",
         howto_tip: "Truco: mueve la barra despacio y verás cómo se derriten los picos.",
@@ -1056,15 +1273,15 @@
         footer_analysis: "Análisis completo",
         footer_made_by: "Hecho por AliR-lab",
         axis_won: "% de carreras ganadas",
-        legend_team: "Equipo",
-        legend_engine: "Motor",
-        legend_factory: "Fábrica",
         slider_prefix: "Media móvil: ",
         years_one: "{n} año",
         years_other: "{n} años",
         years_long_one: "{n} año",
         years_long_other: "{n} años",
-        rotate_tip: "Truco: gira el móvil para ver el gráfico más ancho."
+        rotate_tip: "Truco: gira el móvil para ver el gráfico más ancho.",
+        header_report: "Informe →",
+        legend_count: "{v} de {n} líneas visibles",
+        legend_hint: "Intro: oculta o muestra esta línea. Mayús+Intro: muestra solo esta línea; púlsalo otra vez para verlas todas."
       },
 
       // En francés va un espacio irrompible (&nbsp; o  ) antes de : ; ? y %
@@ -1076,8 +1293,10 @@
         intro: "Cette page explore qui a dominé la Formule 1, saison après saison, du premier championnat du monde en 1950 à aujourd’hui. La domination se mesure en <strong>pourcentage de courses gagnées chaque saison</strong>, afin de comparer équitablement des époques différentes, et elle est observée sous trois angles&nbsp;: les <strong>écuries</strong> (chaque constructeur tel qu’il a été officiellement engagé), les <strong>moteurs</strong> (le motoriste derrière la voiture gagnante, qui équipe souvent plusieurs écuries à la fois) et les <strong>usines</strong> (les écuries regroupées par filiation&nbsp;: une usine qui a changé de nom et de propriétaire au fil des ans, comme Tyrrell → BAR → Honda → Brawn → Mercedes, compte pour une seule).",
         howto_label: "Mode d’emploi",
         howto_slider: "<strong>Curseur&nbsp;:</strong> lissez les courbes de 1 à 10 ans. Les fenêtres courtes montrent chaque saison&nbsp;; les longues révèlent les grandes ères.",
-        howto_click: "<strong>Cliquez sur un nom dans la légende&nbsp;:</strong> masquez-le ou affichez-le.",
+        howto_click: "<strong>Cliquez sur un nom au-dessus du graphique&nbsp;:</strong> masquez-le ou affichez-le.",
+        howto_click_touch: "<strong>Touchez un nom au-dessus du graphique&nbsp;:</strong> masquez-le ou affichez-le.",
         howto_dblclick: "<strong>Double-cliquez sur un nom&nbsp;:</strong> isolez-le. Double-cliquez à nouveau pour tout réafficher.",
+        howto_dblclick_touch: "<strong>Touchez deux fois un nom&nbsp;:</strong> isolez-le. Touchez-le à nouveau deux fois pour tout réafficher.",
         howto_zoom: "<strong>Faites glisser sur un graphique&nbsp;:</strong> zoomez sur une période. Double-cliquez pour réinitialiser.",
         howto_hover: "<strong>Survolez une courbe&nbsp;:</strong> affichez la valeur exacte.",
         howto_tip: "Astuce&nbsp;: déplacez le curseur lentement et regardez les pics fondre.",
@@ -1099,15 +1318,16 @@
         footer_analysis: "Analyse complète",
         footer_made_by: "Réalisé par AliR-lab",
         axis_won: "% de courses gagnées",
-        legend_team: "Écurie",
-        legend_engine: "Moteur",
-        legend_factory: "Usine",
         slider_prefix: "Moyenne mobile : ",
         years_one: "{n} an",
         years_other: "{n} ans",
         years_long_one: "{n} an",
         years_long_other: "{n} ans",
-        rotate_tip: "Astuce&nbsp;: tournez votre téléphone pour un affichage plus large."
+        rotate_tip: "Astuce&nbsp;: tournez votre téléphone pour un affichage plus large.",
+        header_report: "Rapport →",
+        // Va en aria-label (texto plano): espacio normal, sin &nbsp;
+        legend_count: "{v} courbes affichées sur {n}",
+        legend_hint: "Entrée : masque ou affiche cette courbe. Maj+Entrée : n’affiche que cette courbe ; appuyez à nouveau pour tout afficher."
       },
 
       it: {
@@ -1118,8 +1338,10 @@
         intro: "Questa pagina esplora chi ha dominato la Formula 1, stagione dopo stagione, dal primo Campionato del Mondo nel 1950 a oggi. Il dominio si misura come <strong>percentuale di gare vinte in ogni stagione</strong>, così da confrontare in modo equo epoche diverse, e viene osservato da tre punti di vista: le <strong>scuderie</strong> (ogni costruttore così come è stato iscritto ufficialmente), i <strong>motori</strong> (il motorista dietro la monoposto vincente, che spesso fornisce più scuderie contemporaneamente) e le <strong>fabbriche</strong> (scuderie raggruppate per discendenza: una fabbrica che negli anni ha cambiato nome e proprietario, come Tyrrell → BAR → Honda → Brawn → Mercedes, conta come una sola).",
         howto_label: "Come si usa",
         howto_slider: "<strong>Cursore:</strong> smussa le linee da 1 a 10 anni. Le finestre brevi mostrano ogni stagione; quelle lunghe rivelano le grandi ere.",
-        howto_click: "<strong>Clicca su un nome nella legenda:</strong> lo nascondi o lo mostri.",
+        howto_click: "<strong>Clicca su un nome sopra il grafico:</strong> lo nascondi o lo mostri.",
+        howto_click_touch: "<strong>Tocca un nome sopra il grafico:</strong> lo nascondi o lo mostri.",
         howto_dblclick: "<strong>Doppio clic su un nome:</strong> lo isoli. Un altro doppio clic li riporta tutti.",
+        howto_dblclick_touch: "<strong>Doppio tocco su un nome:</strong> lo isoli. Un altro doppio tocco li riporta tutti.",
         howto_zoom: "<strong>Trascina su un grafico:</strong> ingrandisci un periodo. Doppio clic per ripristinare.",
         howto_hover: "<strong>Passa il mouse su una linea:</strong> vedi il valore esatto.",
         howto_tip: "Consiglio: muovi il cursore lentamente e guarda i picchi sciogliersi.",
@@ -1141,15 +1363,15 @@
         footer_analysis: "Analisi completa",
         footer_made_by: "Realizzato da AliR-lab",
         axis_won: "% di gare vinte",
-        legend_team: "Scuderia",
-        legend_engine: "Motore",
-        legend_factory: "Fabbrica",
         slider_prefix: "Media mobile: ",
         years_one: "{n} anno",
         years_other: "{n} anni",
         years_long_one: "{n} anno",
         years_long_other: "{n} anni",
-        rotate_tip: "Consiglio: ruota il telefono per una vista più ampia."
+        rotate_tip: "Consiglio: ruota il telefono per una vista più ampia.",
+        header_report: "Report →",
+        legend_count: "{v} linee visibili su {n}",
+        legend_hint: "Invio: nasconde o mostra questa linea. Maiusc+Invio: mostra solo questa linea; premilo di nuovo per vederle tutte."
       }
     };
 
@@ -1214,10 +1436,6 @@
           "yaxis.title.text": t("axis_won")
         };
 
-        var box = chart.closest(".chart");
-        var legendKey = box && box.dataset.legend;
-        if (legendKey) update["legend.title.text"] = t(legendKey);
-
         Plotly.relayout(chart, update);
       });
     }
@@ -1227,6 +1445,8 @@
       try { localStorage.setItem("lang", lang); } catch (e) {}
       applyTranslations();
       translateCharts();
+      // El botón plegable de la leyenda ("Teams · 10/10") se define más abajo.
+      if (typeof updateLegends === "function") updateLegends();
     }
 
     document.querySelectorAll(".lang-switch button").forEach(function (btn) {
@@ -1239,6 +1459,243 @@
     currentLang = detectLanguage();
     applyTranslations();
     window.addEventListener("load", translateCharts);
+  </script>
+
+  <script>
+    // ---------- Leyenda propia ----------
+    // Cada .chart-legend se rellena con una pastilla (botón) por trazo del gráfico de su
+    // tarjeta. El estado oculto/visible vive en Plotly (gd.data[i].visible): las pastillas
+    // solo lo reflejan, así que la barra de la media móvil (animate con x e y) y el cambio
+    // de tema o idioma (relayout) no lo pierden.
+
+    // Palabras que no siguen la regla "primera letra en mayúscula"
+    var SPECIAL_WORDS = { mclaren: "McLaren", tag: "TAG", rbpt: "RBPT", bar: "BAR", brm: "BRM", bmw: "BMW" };
+
+    // "red-bull" → "Red Bull", "honda-rbpt" → "Honda RBPT", "tyrrell → mercedes" → "Tyrrell → Mercedes"
+    function prettyName(id) {
+      return String(id).split("→").map(function (part) {
+        return part.trim().toLowerCase().split(/[\s_-]+/).filter(Boolean).map(function (word) {
+          return SPECIAL_WORDS[word] || word.charAt(0).toUpperCase() + word.slice(1);
+        }).join(" ");
+      }).join(" → ");
+    }
+
+    var legends = [];
+    // Margen para distinguir un clic de un doble clic
+    var DOUBLE_CLICK_MS = 250;
+
+    function isTraceVisible(gd, i) {
+      var v = gd.data[i].visible;
+      return v === undefined || v === true;
+    }
+
+    // Color real con el que Plotly pinta la línea (sale de _fullData, que ya tiene aplicada
+    // la paleta); si no está, el que venga en los datos.
+    function traceColor(gd, i) {
+      var full = (gd._fullData || []).filter(function (tr) { return tr.index === i; })[0];
+      var src = full || gd.data[i];
+      var color = (src.line && src.line.color) || (src.marker && src.marker.color);
+      return typeof color === "string" ? color : "currentColor";
+    }
+
+    // Copia el estado de Plotly a las pastillas y al botón plegable.
+    function syncLegend(st) {
+      var total = st.pills.length;
+      var shown = 0;
+      st.pills.forEach(function (pill, i) {
+        var on = isTraceVisible(st.gd, i);
+        if (on) shown++;
+        pill.setAttribute("aria-pressed", on ? "true" : "false");
+        pill.querySelector(".legend-dot").style.setProperty("--dot", traceColor(st.gd, i));
+      });
+
+      var title = t(st.titleKey);
+      st.toggleText.textContent = title + " · " + shown + "/" + total;
+      st.toggle.setAttribute("aria-label", title + ": " +
+        t("legend_count").replace("{v}", shown).replace("{n}", total));
+      st.list.setAttribute("aria-label", title);
+      st.hint.textContent = t("legend_hint");
+    }
+
+    function updateLegends() {
+      legends.forEach(syncLegend);
+    }
+
+    // Clic: oculta o muestra la línea.
+    function toggleTrace(st, i) {
+      Plotly.restyle(st.gd, { visible: isTraceVisible(st.gd, i) ? "legendonly" : true }, [i]);
+    }
+
+    // Doble clic: deja solo esa línea; si ya estaba sola, vuelven todas.
+    function isolateTrace(st, i) {
+      var indices = st.pills.map(function (_, j) { return j; });
+      var alreadyAlone = indices.every(function (j) {
+        return isTraceVisible(st.gd, j) === (j === i);
+      });
+      var visible = indices.map(function (j) {
+        return alreadyAlone || j === i ? true : "legendonly";
+      });
+      Plotly.restyle(st.gd, { visible: visible }, indices);
+    }
+
+    // Si hay un clic esperando (en otra pastilla), se ejecuta ya.
+    function flushPendingClick(st) {
+      if (!st.pending) return;
+      clearTimeout(st.pending.timer);
+      var i = st.pending.index;
+      st.pending = null;
+      toggleTrace(st, i);
+    }
+
+    function setLegendOpen(st, open) {
+      st.el.classList.toggle("is-open", open);
+      st.toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    function closeAllLegends(except) {
+      legends.forEach(function (st) {
+        if (st !== except) setLegendOpen(st, false);
+      });
+    }
+
+    function buildLegend(el) {
+      var card = el.closest(".card");
+      var gd = card && card.querySelector(".chart .js-plotly-plot");
+      if (!gd || !gd.data) return;
+
+      // Nombres para el público. hovertemplate usa %{fullData.name}, así que la etiqueta
+      // flotante también los muestra. Los frames de la barra solo traen x e y: no los deshacen.
+      var indices = gd.data.map(function (_, i) { return i; });
+      Plotly.restyle(gd, { name: gd.data.map(function (tr) { return prettyName(tr.name); }) }, indices);
+
+      var st = { el: el, gd: gd, titleKey: el.dataset.title, pills: [], pending: null };
+      var listId = "legend-" + el.dataset.title;
+
+      // Botón plegable (solo se ve por debajo de 600 px, lo decide el CSS)
+      var toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "legend-toggle glass";
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-controls", listId);
+      var toggleText = document.createElement("span");
+      var caret = document.createElement("span");
+      caret.className = "legend-caret";
+      caret.setAttribute("aria-hidden", "true");
+      caret.textContent = "▾";
+      toggle.append(toggleText, caret);
+
+      var list = document.createElement("div");
+      list.className = "legend-list";
+      list.id = listId;
+      list.setAttribute("role", "group");
+
+      // Atajos de teclado, solo para lectores de pantalla: cada pastilla lo enlaza con
+      // aria-describedby y el lector lo lee después del nombre y el estado.
+      var hint = document.createElement("span");
+      hint.className = "visually-hidden";
+      hint.id = "legend-hint-" + el.dataset.title;
+
+      gd.data.forEach(function (trace, i) {
+        var pill = document.createElement("button");
+        pill.type = "button";
+        pill.className = "legend-pill";
+        pill.setAttribute("aria-describedby", hint.id);
+        var dot = document.createElement("span");
+        dot.className = "legend-dot";
+        dot.setAttribute("aria-hidden", "true");
+        var label = document.createElement("span");
+        label.textContent = trace.name;
+        pill.append(dot, label);
+
+        // Con teclado, el clic llega después de pulsar Enter o Espacio: se anota si iba
+        // con Mayús para aislar la línea en vez de ocultarla.
+        var shiftOnKey = false;
+        pill.addEventListener("keydown", function (event) {
+          if (event.key === "Enter" || event.key === " ") shiftOnKey = event.shiftKey;
+        });
+
+        pill.addEventListener("click", function (event) {
+          // Teclado (Enter o Espacio): detail es 0. Se cambia al momento, sin esperar.
+          // Mayús+Enter o Mayús+Espacio aísla, como el doble clic.
+          if (event.detail === 0) {
+            flushPendingClick(st);
+            if (shiftOnKey || event.shiftKey) isolateTrace(st, i);
+            else toggleTrace(st, i);
+            shiftOnKey = false;
+            return;
+          }
+          // Segundo clic en la misma pastilla a tiempo: es un doble clic.
+          if (st.pending && st.pending.index === i) {
+            clearTimeout(st.pending.timer);
+            st.pending = null;
+            isolateTrace(st, i);
+            return;
+          }
+          // Primer clic: espera un poco por si llega el segundo.
+          flushPendingClick(st);
+          st.pending = {
+            index: i,
+            timer: setTimeout(function () {
+              st.pending = null;
+              toggleTrace(st, i);
+            }, DOUBLE_CLICK_MS)
+          };
+        });
+
+        list.appendChild(pill);
+        st.pills.push(pill);
+      });
+
+      toggle.addEventListener("click", function () {
+        var open = !st.el.classList.contains("is-open");
+        closeAllLegends(st);
+        setLegendOpen(st, open);
+      });
+
+      el.replaceChildren(toggle, list, hint);
+      st.toggle = toggle;
+      st.toggleText = toggleText;
+      st.list = list;
+      st.hint = hint;
+      legends.push(st);
+
+      // Cualquier cambio de visibilidad (también desde fuera) se refleja en las pastillas
+      gd.on("plotly_restyle", function () { syncLegend(st); });
+      syncLegend(st);
+    }
+
+    // Tocar fuera de la cajita la cierra. pointerdown y no click: Plotly a veces cancela
+    // el click al tocar el gráfico.
+    document.addEventListener("pointerdown", function (event) {
+      legends.forEach(function (st) {
+        if (st.el.classList.contains("is-open") && !st.el.contains(event.target)) {
+          setLegendOpen(st, false);
+        }
+      });
+    });
+
+    // Esc la cierra y devuelve el foco al botón si estaba dentro.
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") return;
+      legends.forEach(function (st) {
+        if (!st.el.classList.contains("is-open")) return;
+        var hadFocus = st.el.contains(document.activeElement);
+        setLegendOpen(st, false);
+        if (hadFocus) st.toggle.focus();
+      });
+    });
+
+    // Al pasar a una pantalla donde las pastillas se ven siempre, la cajita deja de existir:
+    // se cierra para no quedar abierta. Misma consulta que el CSS.
+    var narrowLegend = window.matchMedia("(max-width: 599px), (max-height: 500px)");
+    if (narrowLegend.addEventListener) {
+      narrowLegend.addEventListener("change", function () { closeAllLegends(null); });
+    }
+
+    window.addEventListener("load", function () {
+      if (typeof Plotly === "undefined") return;
+      document.querySelectorAll(".chart-legend").forEach(buildLegend);
+    });
   </script>
 
   <script>
