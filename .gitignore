@@ -20,3 +20,5 @@ data/
 
 # macOS
 .DS_Store
+# Práctica personal (no publicar)
+notebooks/00_practice.ipynb
