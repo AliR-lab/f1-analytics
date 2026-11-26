@@ -1,7 +1,7 @@
 [project]
 name = "f1-analytics"
 version = "0.1.0"
-description = "Add your description here"
+description = "Hands-on data analytics, big data and AI learning project using Formula 1 data"
 readme = "README.md"
 authors = [
     { name = "Ali R", email = "349435247+AliR-lab@users.noreply.github.com" }
